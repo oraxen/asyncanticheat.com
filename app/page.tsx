@@ -125,7 +125,8 @@ export default function HomePage() {
                 src="https://hackedserver.org/thread/index.html?mode=embedded"
                 className="absolute inset-0 h-full w-full"
                 title="HackedServer Thread Showcase"
-                allow="fullscreen"
+                sandbox="allow-scripts allow-same-origin"
+                referrerPolicy="no-referrer"
               />
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { 
   RiShieldCheckLine, 
   RiLockLine, 
@@ -306,6 +306,8 @@ export default function ModulesPage() {
   const [selectedModule, setSelectedModule] = useState<InstalledModule | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Track pending toggle operations to prevent desync on rapid clicks
+  const pendingToggles = useRef<Set<string>>(new Set());
 
   // Fetch modules from API
   useEffect(() => {
@@ -346,6 +348,10 @@ export default function ModulesPage() {
     const module = modules.find(m => m.id === id);
     if (!module) return;
     
+    // Prevent rapid clicks from causing desync
+    if (pendingToggles.current.has(id)) return;
+    pendingToggles.current.add(id);
+    
     const newEnabled = !module.enabled;
     
     // Optimistically update UI
@@ -367,7 +373,7 @@ export default function ModulesPage() {
       await api.toggleModule(DEFAULT_SERVER_ID, id, newEnabled);
     } catch (err) {
       console.error("Failed to toggle module:", err);
-      // Revert on error
+      // Revert on error - use the intended state we tried to set
       setModules((prev) =>
         prev.map((m) => {
           if (m.id === id) {
@@ -380,6 +386,8 @@ export default function ModulesPage() {
           return m;
         })
       );
+    } finally {
+      pendingToggles.current.delete(id);
     }
   };
 

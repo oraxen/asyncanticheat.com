@@ -9,7 +9,7 @@ import {
   RiMapPinLine,
 } from "@remixicon/react";
 import { cn } from "@/lib/utils";
-import { api, type Player as ApiPlayer, type DashboardStats } from "@/lib/api";
+import { api, type Player as ApiPlayer, type DashboardStats, type ConnectionMetrics } from "@/lib/api";
 
 // Transform API player to dashboard player format
 interface DashboardPlayer {
@@ -171,7 +171,7 @@ function PlayerDetailPanel({
 
           {/* Action */}
           <Link
-            href={`/dashboard/findings?player=${player.name}`}
+            href={`/dashboard/findings?player=${encodeURIComponent(player.name)}`}
             className="group flex items-center justify-center gap-2 w-full py-2.5 mt-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] text-white/80 hover:text-white text-xs font-medium transition-all"
           >
             <span>View All Findings</span>
@@ -542,6 +542,7 @@ export default function DashboardPage() {
   );
   const [players, setPlayers] = useState<DashboardPlayer[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [connectionMetrics, setConnectionMetrics] = useState<ConnectionMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -561,10 +562,10 @@ export default function DashboardPage() {
 
         // Transform API players to dashboard format
         const dashboardPlayers: DashboardPlayer[] = playersData.map(
-          (p, index) => {
+          (p) => {
             const pos = generateGlobePosition(p.uuid);
             return {
-              id: String(index + 1),
+              id: p.uuid,
               name: p.username,
               lat: pos.lat,
               lng: pos.lng,
@@ -587,11 +588,28 @@ export default function DashboardPage() {
       }
     }
 
+    // Fetch connection status
+    async function fetchConnectionStatus() {
+      try {
+        const metrics = await api.getConnectionStatus(DEFAULT_SERVER_ID);
+        setConnectionMetrics(metrics);
+      } catch (err) {
+        console.error("Failed to fetch connection status:", err);
+      }
+    }
+
     fetchData();
+    fetchConnectionStatus();
 
     // Refresh data every 30 seconds
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
+    const dataInterval = setInterval(fetchData, 30000);
+    // Refresh connection status every 5 seconds
+    const statusInterval = setInterval(fetchConnectionStatus, 5000);
+    
+    return () => {
+      clearInterval(dataInterval);
+      clearInterval(statusInterval);
+    };
   }, []);
 
   if (!mounted) return null;

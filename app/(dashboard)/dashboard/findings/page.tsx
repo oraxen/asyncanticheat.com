@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { RiSearchLine, RiCloseLine, RiTimeLine, RiAlertLine, RiArrowLeftLine } from "@remixicon/react";
 import { cn } from "@/lib/utils";
@@ -65,6 +65,10 @@ function getPlayerStats(findings: Finding[]) {
       if (severityRank[f.severity] > severityRank[existing.highestSeverity as keyof typeof severityRank]) {
         existing.highestSeverity = f.severity;
       }
+      // Update lastSeen if this finding is more recent
+      if (new Date(f.created_at) > new Date(existing.lastSeen)) {
+        existing.lastSeen = f.created_at;
+      }
       existing.detectors.add(f.detector_name);
     } else {
       playerMap.set(playerName, {
@@ -90,7 +94,8 @@ function PlayerHistoryPanel({
   findings: Finding[];
   onClose: () => void;
 }) {
-  const playerFindings = findings.filter(f => f.player_name === playerName);
+  // Normalize player name comparison to handle "Unknown" entries
+  const playerFindings = findings.filter(f => (f.player_name || "Unknown") === playerName);
   const stats = getPlayerStats(findings).find(p => p.name === playerName);
   
   // Group findings by date
@@ -236,9 +241,12 @@ export default function FindingsPage() {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fetchIdRef = useRef(0);
 
   // Fetch findings from API
   useEffect(() => {
+    const fetchId = ++fetchIdRef.current;
+    
     async function fetchFindings() {
       try {
         setLoading(true);
@@ -248,12 +256,22 @@ export default function FindingsPage() {
         if (filter) params.severity = filter;
         
         const { findings: data } = await api.getFindings(DEFAULT_SERVER_ID, params);
+        
+        // Guard against stale responses from out-of-order requests
+        if (fetchId !== fetchIdRef.current) return;
+        
         setFindings(data);
       } catch (err) {
+        // Guard against stale error handling
+        if (fetchId !== fetchIdRef.current) return;
+        
         console.error("Failed to fetch findings:", err);
         setError(err instanceof Error ? err.message : "Failed to load findings");
       } finally {
-        setLoading(false);
+        // Guard against stale loading state
+        if (fetchId === fetchIdRef.current) {
+          setLoading(false);
+        }
       }
     }
     
@@ -407,7 +425,7 @@ export default function FindingsPage() {
                   onClick={() => setSelectedPlayer(finding.player_name || "Unknown")}
                   className={cn(
                     "w-full flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors text-left",
-                    selectedPlayer === finding.player_name && "bg-white/[0.04]"
+                    selectedPlayer === (finding.player_name || "Unknown") && "bg-white/[0.04]"
                   )}
                 >
                   <div className={cn("w-2 h-2 rounded-full flex-shrink-0", severityDots[finding.severity])} />
