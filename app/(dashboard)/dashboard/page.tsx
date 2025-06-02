@@ -560,12 +560,16 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Track current server ID to prevent stale responses from updating state
+  const currentServerIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     setMounted(true);
-    
+
     if (!selectedServerId) return;
-    
-    // Capture serverId for closures (TypeScript narrowing)
+
+    // Update ref to current server - used to guard against stale responses
+    currentServerIdRef.current = selectedServerId;
     const serverId = selectedServerId;
 
     // Fetch data from API
@@ -578,6 +582,9 @@ export default function DashboardPage() {
           api.getPlayers(serverId),
           api.getStats(serverId),
         ]);
+
+        // Guard against stale responses if server changed during fetch
+        if (currentServerIdRef.current !== serverId) return;
 
         // Transform API players to dashboard format
         const dashboardPlayers: DashboardPlayer[] = playersData.map((p) => {
@@ -598,10 +605,15 @@ export default function DashboardPage() {
         setPlayers(dashboardPlayers);
         setStats(statsData);
       } catch (err) {
+        // Guard against stale error handling
+        if (currentServerIdRef.current !== serverId) return;
         console.error("Failed to fetch dashboard data:", err);
         setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
-        setLoading(false);
+        // Guard against stale loading state
+        if (currentServerIdRef.current === serverId) {
+          setLoading(false);
+        }
       }
     }
 
@@ -609,6 +621,8 @@ export default function DashboardPage() {
     async function fetchConnectionStatus() {
       try {
         const metrics = await api.getConnectionStatus(serverId);
+        // Guard against stale responses
+        if (currentServerIdRef.current !== serverId) return;
         setConnectionMetrics(metrics);
       } catch (err) {
         console.error("Failed to fetch connection status:", err);

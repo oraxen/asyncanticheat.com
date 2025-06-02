@@ -361,11 +361,13 @@ export default function FindingsPage() {
 
   const filtered = useMemo(() => {
     return findings.filter((f) => {
-      if (
-        search &&
-        !f.player_name?.toLowerCase().includes(search.toLowerCase())
-      )
-        return false;
+      if (search) {
+        // Handle missing player_name by treating as "Unknown" (consistent with rest of UI)
+        const playerName = f.player_name || "Unknown";
+        if (!playerName.toLowerCase().includes(search.toLowerCase())) {
+          return false;
+        }
+      }
       return true;
     });
   }, [findings, search]);
