@@ -30,6 +30,12 @@ export interface Player {
   detectors: string[];
 }
 
+export interface ActivePlayer {
+  uuid: string;
+  username: string;
+  last_seen: string;
+}
+
 export interface Module {
   id: string;
   name: string;
@@ -82,6 +88,7 @@ interface FindingsResponse {
 interface PlayersResponse {
   ok: boolean;
   players: Player[];
+  active_players: ActivePlayer[];
 }
 
 interface ModulesResponse {
@@ -233,14 +240,19 @@ class ApiClient {
   }
 
   // Get players for a server
-  async getPlayers(serverId: string): Promise<Player[]> {
+  async getPlayers(
+    serverId: string
+  ): Promise<{ players: Player[]; activePlayers: ActivePlayer[] }> {
     try {
       const response = await this.fetch<PlayersResponse>(
         `/dashboard/${serverId}/players`
       );
-      return response.players;
+      return {
+        players: response.players,
+        activePlayers: response.active_players || [],
+      };
     } catch {
-      return MOCK_PLAYERS;
+      return { players: MOCK_PLAYERS, activePlayers: [] };
     }
   }
 

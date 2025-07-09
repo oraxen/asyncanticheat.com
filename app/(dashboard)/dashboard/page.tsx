@@ -30,6 +30,13 @@ interface DashboardPlayer {
   region: string;
 }
 
+interface ActivePlayerDot {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+}
+
 const severityColors = {
   low: "#3b82f6",
   medium: "#f59e0b",
@@ -201,9 +208,11 @@ function PlayerDetailPanel({
 // Animated Globe Component
 function AnimatedGlobe({
   players,
+  activePlayers,
   onPlayerClick,
 }: {
   players: DashboardPlayer[];
+  activePlayers: ActivePlayerDot[];
   onPlayerClick: (player: DashboardPlayer) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -344,6 +353,32 @@ function AnimatedGlobe({
         }
       });
 
+      // Draw active players (seen but no findings) as subtle gray points
+      activePlayers.forEach((p) => {
+        const x =
+          centerX + Math.cos(p.lat) * Math.sin(p.lng + rotation) * radius;
+        const y = centerY + Math.sin(p.lat) * radius;
+        const z = Math.cos(p.lat) * Math.cos(p.lng + rotation);
+
+        if (z > 0) {
+          const h = hashString(p.id);
+          const pulse = 1.5 + Math.sin(time * 1.25 + h) * 0.35;
+
+          // Soft ring
+          ctx.beginPath();
+          ctx.arc(x, y, pulse + 2.5, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(180, 180, 180, ${0.06 + z * 0.08})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Core dot
+          ctx.beginPath();
+          ctx.arc(x, y, pulse, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(160, 160, 160, ${0.22 + z * 0.22})`;
+          ctx.fill();
+        }
+      });
+
       // Draw player points with labels
       const newPlayerPositions: {
         id: string;
@@ -463,7 +498,7 @@ function AnimatedGlobe({
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(animationId);
     };
-  }, [players]);
+  }, [players, activePlayers]);
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -554,6 +589,7 @@ export default function DashboardPage() {
     null
   );
   const [players, setPlayers] = useState<DashboardPlayer[]>([]);
+  const [activePlayers, setActivePlayers] = useState<ActivePlayerDot[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [connectionMetrics, setConnectionMetrics] =
     useState<ConnectionMetrics | null>(null);
@@ -571,6 +607,7 @@ export default function DashboardPage() {
       currentServerIdRef.current = null;
       setSelectedPlayer(null);
       setPlayers([]);
+      setActivePlayers([]);
       setStats(null);
       setConnectionMetrics(null);
       setError(null);
@@ -597,22 +634,30 @@ export default function DashboardPage() {
         if (currentServerIdRef.current !== serverId) return;
 
         // Transform API players to dashboard format
-        const dashboardPlayers: DashboardPlayer[] = playersData.map((p) => {
-          const pos = generateGlobePosition(p.uuid);
-          return {
-            id: p.uuid,
-            name: p.username,
-            lat: pos.lat,
-            lng: pos.lng,
-            severity: p.highest_severity,
-            detector: p.detectors[0] || "unknown",
-            findings: p.findings_count,
-            lastSeen: formatRelativeTime(p.last_seen),
-            region: "Global", // Could be enhanced with GeoIP
-          };
-        });
+        const dashboardPlayers: DashboardPlayer[] = playersData.players.map(
+          (p) => {
+            const pos = generateGlobePosition(p.uuid);
+            return {
+              id: p.uuid,
+              name: p.username,
+              lat: pos.lat,
+              lng: pos.lng,
+              severity: p.highest_severity,
+              detector: p.detectors[0] || "unknown",
+              findings: p.findings_count,
+              lastSeen: formatRelativeTime(p.last_seen),
+              region: "Global", // Could be enhanced with GeoIP
+            };
+          }
+        );
 
         setPlayers(dashboardPlayers);
+        setActivePlayers(
+          playersData.activePlayers.map((p) => {
+            const pos = generateGlobePosition(p.uuid);
+            return { id: p.uuid, name: p.username, lat: pos.lat, lng: pos.lng };
+          })
+        );
         setStats(statsData);
       } catch (err) {
         // Guard against stale error handling
@@ -659,7 +704,11 @@ export default function DashboardPage() {
     <div className="h-screen flex gap-6 -m-6 overflow-hidden">
       {/* Globe Section - Left */}
       <div className="flex-1 relative">
-        <AnimatedGlobe players={players} onPlayerClick={setSelectedPlayer} />
+        <AnimatedGlobe
+          players={players}
+          activePlayers={activePlayers}
+          onPlayerClick={setSelectedPlayer}
+        />
 
         {/* Player Detail Panel */}
         {selectedPlayer && (
