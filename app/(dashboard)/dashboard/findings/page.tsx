@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   RiSearchLine,
   RiCloseLine,
@@ -120,16 +120,37 @@ function PlayerHistoryPanel({
   );
   const stats = getPlayerStats(findings).find((p) => p.name === playerName);
 
-  // Group findings by date
-  const groupedFindings = playerFindings.reduce(
-    (acc, finding) => {
-      const { date } = formatDate(finding.created_at);
-      if (!acc[date]) acc[date] = [];
-      acc[date].push(finding);
-      return acc;
-    },
-    {} as Record<string, Finding[]>
-  );
+  // Sort + group findings by day (descending) for stable timeline rendering.
+  const timelineGroups = useMemo(() => {
+    const sorted = [...playerFindings].sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    const map = new Map<number, { label: string; items: Finding[] }>();
+
+    for (const finding of sorted) {
+      const d = new Date(finding.created_at);
+      d.setHours(0, 0, 0, 0);
+      const dayStartMs = d.getTime();
+      const label = formatDate(finding.created_at).date;
+
+      const existing = map.get(dayStartMs);
+      if (existing) {
+        existing.items.push(finding);
+      } else {
+        map.set(dayStartMs, { label, items: [finding] });
+      }
+    }
+
+    return Array.from(map.entries())
+      .sort((a, b) => b[0] - a[0])
+      .map(([dayStartMs, v]) => ({
+        key: dayStartMs,
+        label: v.label,
+        items: v.items,
+      }));
+  }, [playerFindings]);
 
   return (
     <div className="flex flex-col h-full animate-fade-in">
@@ -221,12 +242,12 @@ function PlayerHistoryPanel({
       {/* Timeline */}
       <div className="flex-1 overflow-y-auto px-5 pb-5">
         <div className="space-y-6">
-          {Object.entries(groupedFindings).map(([date, items]) => (
-            <div key={date}>
+          {timelineGroups.map(({ key, label, items }) => (
+            <div key={key}>
               {/* Date Header */}
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-xs font-medium text-white/60">
-                  {date}
+                  {label}
                 </span>
                 <div className="flex-1 h-px bg-white/[0.06]" />
               </div>
@@ -300,6 +321,8 @@ function PlayerHistoryPanel({
 export default function FindingsPage() {
   const searchParams = useSearchParams();
   const selectedServerId = useSelectedServer();
+  const router = useRouter();
+  const pathname = usePathname();
   const deepLinkPlayer = searchParams.get("player")?.trim() || null;
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
@@ -373,6 +396,14 @@ export default function FindingsPage() {
     }
   }, [searchParams]);
 
+  const clearDeepLinkPlayer = useCallback(() => {
+    if (!searchParams.get("player")) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("player");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }, [pathname, router, searchParams]);
+
   const filtered = useMemo(() => {
     return findings.filter((f) => {
       if (search) {
@@ -433,6 +464,7 @@ export default function FindingsPage() {
 
       if (e.key === "Escape" && selectedPlayer) {
         e.preventDefault();
+        clearDeepLinkPlayer();
         setSelectedPlayer(null);
         setSearch("");
       } else if (e.key === "ArrowDown" || e.key === "j") {
@@ -450,7 +482,7 @@ export default function FindingsPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedPlayer, navigatePlayer]);
+  }, [selectedPlayer, navigatePlayer, clearDeepLinkPlayer]);
 
   return (
     <div className="h-screen -m-6 flex flex-col relative">
@@ -582,6 +614,7 @@ export default function FindingsPage() {
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm z-40 animate-fade-in"
             onClick={() => {
+              clearDeepLinkPlayer();
               setSelectedPlayer(null);
               setSearch("");
             }}
@@ -592,6 +625,7 @@ export default function FindingsPage() {
               playerName={selectedPlayer}
               findings={findings}
               onClose={() => {
+                clearDeepLinkPlayer();
                 setSelectedPlayer(null);
                 setSearch("");
               }}
