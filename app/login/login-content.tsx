@@ -20,6 +20,14 @@ export function LoginContent() {
   } | null>(null);
 
   const error = searchParams.get("error");
+  const redirect = (() => {
+    const r = searchParams.get("redirect");
+    // Mirror server-side safety checks (relative path only).
+    if (!r) return "/dashboard";
+    if (!r.startsWith("/") || r.startsWith("//")) return "/dashboard";
+    if (r.includes("%2f") || r.includes("%2F")) return "/dashboard";
+    return r;
+  })();
   const supabase = createClient();
 
   // Check if user is already logged in
@@ -29,11 +37,11 @@ export function LoginContent() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        router.push("/dashboard");
+        router.push(redirect);
       }
     };
     checkUser();
-  }, [router, supabase.auth]);
+  }, [router, supabase.auth, redirect]);
 
   // Check if email exists when user finishes typing
   useEffect(() => {
@@ -77,7 +85,7 @@ export function LoginContent() {
     await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?redirect=/dashboard`,
+        redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
       },
     });
   };
@@ -98,7 +106,7 @@ export function LoginContent() {
         setMessage({ type: "error", text: error.message });
         setLoading(false);
       } else {
-        router.push("/dashboard");
+        router.push(redirect);
       }
       return;
     }
@@ -107,7 +115,7 @@ export function LoginContent() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?redirect=/dashboard`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
       },
     });
 

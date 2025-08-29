@@ -188,10 +188,20 @@ class ApiClient {
   // Get all servers
   async getServers(): Promise<Server[]> {
     try {
-      const response = await this.fetch<ServersResponse>("/dashboard/servers");
-      return response.servers;
+      // Servers are fetched via Next.js (server-side auth) so we only return servers linked to the current user.
+      const res = await fetch("/api/servers", {
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status} ${res.statusText}`);
+      }
+      const json = (await res.json()) as { ok: boolean; servers: Server[] };
+      if (!json.ok) {
+        throw new Error("failed_to_load_servers");
+      }
+      return json.servers ?? [];
     } catch {
-      return [{ id: "demo-server", name: "Demo Server", platform: "bukkit", last_seen_at: new Date().toISOString() }];
+      return [];
     }
   }
 
