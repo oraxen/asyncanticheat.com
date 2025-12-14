@@ -848,8 +848,12 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full flex-shrink-0 bg-white/20" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white/90 truncate">{p.name}</p>
-                        <p className="text-[10px] text-white/40">{p.lastSeen}</p>
+                        <p className="text-sm text-white/90 truncate">
+                          {p.name}
+                        </p>
+                        <p className="text-[10px] text-white/40">
+                          {p.lastSeen}
+                        </p>
                       </div>
                       <span className="text-[10px] text-white/30 uppercase">
                         active
