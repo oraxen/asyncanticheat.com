@@ -724,7 +724,7 @@ export default function DashboardPage() {
             <StatPanel
               label="Players"
               value={stats?.players_monitored ?? "—"}
-              trend="monitored"
+              trend="with findings"
             />
             <StatPanel
               label="Latency"
