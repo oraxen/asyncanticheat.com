@@ -441,18 +441,15 @@ export default function ModulesPage() {
 
     const newEnabled = !module.enabled;
 
-    // Optimistically update UI
+    // Optimistically update modules list
     setModules((prev) =>
-      prev.map((m) => {
-        if (m.id === id) {
-          const updated = { ...m, enabled: newEnabled };
-          if (selectedModule?.id === id) {
-            setSelectedModule(updated);
-          }
-          return updated;
-        }
-        return m;
-      })
+      prev.map((m) => (m.id === id ? { ...m, enabled: newEnabled } : m))
+    );
+
+    // Update selected module separately (not inside setModules updater)
+    // Only update if the toggled module is currently selected
+    setSelectedModule((current) =>
+      current?.id === id ? { ...current, enabled: newEnabled } : current
     );
 
     // Call API
@@ -460,18 +457,13 @@ export default function ModulesPage() {
       await api.toggleModule(selectedServerId, id, newEnabled);
     } catch (err) {
       console.error("Failed to toggle module:", err);
-      // Revert on error - use the intended state we tried to set
+      // Revert modules on error
       setModules((prev) =>
-        prev.map((m) => {
-          if (m.id === id) {
-            const reverted = { ...m, enabled: !newEnabled };
-            if (selectedModule?.id === id) {
-              setSelectedModule(reverted);
-            }
-            return reverted;
-          }
-          return m;
-        })
+        prev.map((m) => (m.id === id ? { ...m, enabled: !newEnabled } : m))
+      );
+      // Revert selected module if it's still the one we toggled
+      setSelectedModule((current) =>
+        current?.id === id ? { ...current, enabled: !newEnabled } : current
       );
     } finally {
       pendingToggles.current.delete(id);
