@@ -16,10 +16,8 @@ import {
   RiUserLine,
 } from "@remixicon/react";
 import { cn } from "@/lib/utils";
-import { newWorkspaceId } from "@/lib/server-store";
 import type { ServerWorkspace } from "@/types/supabase";
 import type { User } from "@supabase/supabase-js";
-import { AddServerDialog } from "./add-server-dialog";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: RiHome5Line },
@@ -47,21 +45,8 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   const selectedServer = servers.find((s) => s.id === selectedServerId);
-
-  const handleAddServer = (name: string) => {
-    const newServer: ServerWorkspace = {
-      id: newWorkspaceId(),
-      name,
-      created_at: new Date().toISOString(),
-    };
-    const updated = [...servers, newServer];
-    onServersChange(updated);
-    onServerSelect(newServer.id);
-    setAddDialogOpen(false);
-  };
 
   return (
     <>
@@ -126,16 +111,16 @@ export function Sidebar({
                   </button>
                 ))}
                 <div className="my-1.5 border-t border-white/[0.06]" />
-                <button
+                <Link
                   onClick={() => {
                     setDropdownOpen(false);
-                    setAddDialogOpen(true);
                   }}
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-white/[0.06] transition-colors"
+                  href="/register-server"
                 >
                   <RiAddLine className="h-3.5 w-3.5 text-white/40" />
-                  <span className="text-sm text-white/50">Add Server</span>
-                </button>
+                  <span className="text-sm text-white/50">Link server</span>
+                </Link>
               </div>
             )}
           </div>
@@ -207,12 +192,6 @@ export function Sidebar({
           <p className="text-xs text-white/30">AsyncAnticheat v0.1.0</p>
         </div>
       </aside>
-
-      <AddServerDialog
-        open={addDialogOpen}
-        onOpenChange={setAddDialogOpen}
-        onAdd={handleAddServer}
-      />
     </>
   );
 }

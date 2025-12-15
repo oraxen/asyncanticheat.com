@@ -40,23 +40,20 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
 
     async function init() {
       let list = loadServerWorkspaces();
-      if (list.length === 0) {
-        // Create default local server entry (fallback when API unreachable)
-        const defaultServer: ServerWorkspace = {
-          id: newWorkspaceId(),
-          name: "My Server",
-          created_at: new Date().toISOString(),
-        };
-        list = [defaultServer];
-        saveServerWorkspaces(list);
-        setSelectedWorkspaceId(defaultServer.id);
-      }
 
       // Prefer servers discovered from the API (real plugin server_id values).
       // Fallback to local storage when API is unavailable.
       try {
         const remoteServers = await api.getServers();
-        if (remoteServers.length > 0) {
+        if (remoteServers.length === 0) {
+          // API reachable but user has no linked servers yet.
+          if (cancelled) return;
+          setServers([]);
+          setSelectedServerId(null);
+          setSelectedWorkspaceId("");
+          setMounted(true);
+          return;
+        } else {
           const merged: ServerWorkspace[] = remoteServers.map((s) => {
             const local = list.find((l) => l.id === s.id);
             return {
@@ -80,7 +77,17 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
           saveServerWorkspaces(list);
         }
       } catch {
-        // ignore; keep local list
+        // API unavailable: keep local list; if empty, create a demo/default entry.
+        if (list.length === 0) {
+          const defaultServer: ServerWorkspace = {
+            id: newWorkspaceId(),
+            name: "My Server",
+            created_at: new Date().toISOString(),
+          };
+          list = [defaultServer];
+          saveServerWorkspaces(list);
+          setSelectedWorkspaceId(defaultServer.id);
+        }
       }
 
       if (cancelled) return;

@@ -723,6 +723,28 @@ export default function DashboardPage() {
 
   if (!mounted) return null;
 
+  if (!selectedServerId) {
+    return (
+      <div className="h-[calc(100vh-3rem)] flex items-center justify-center -m-6 p-6">
+        <div className="max-w-xl w-full glass-panel rounded-2xl p-8 border border-white/[0.08]">
+          <h1 className="text-xl font-semibold text-white">No server linked yet</h1>
+          <p className="mt-2 text-sm text-white/50">
+            Install the AsyncAnticheat plugin, start your server once, then link it
+            to your account using the token shown in the console (or via <span className="font-mono">/aac</span>).
+          </p>
+          <div className="mt-6 flex items-center gap-3">
+            <Link
+              href="/register-server"
+              className="px-4 py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors"
+            >
+              Link a server
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen flex gap-6 -m-6 overflow-hidden">
       {/* Globe Section - Left */}
