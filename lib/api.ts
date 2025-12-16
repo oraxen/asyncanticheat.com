@@ -1,6 +1,9 @@
 // AsyncAntiCheat API Client
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
+// If true, the dashboard will show demo/mock data when the API is unreachable.
+// Default is OFF so dev doesn't silently show fake findings.
+const ENABLE_MOCK_DATA = process.env.NEXT_PUBLIC_ENABLE_MOCK_DATA === "true";
 
 // Types
 export interface DashboardStats {
@@ -207,8 +210,9 @@ class ApiClient {
         `/dashboard/${serverId}/stats`
       );
       return response.stats;
-    } catch {
-      return MOCK_STATS;
+    } catch (err) {
+      if (ENABLE_MOCK_DATA) return MOCK_STATS;
+      throw err;
     }
   }
 
@@ -234,7 +238,8 @@ class ApiClient {
 
       const response = await this.fetch<FindingsResponse>(path);
       return { findings: response.findings, total: response.total };
-    } catch {
+    } catch (err) {
+      if (!ENABLE_MOCK_DATA) throw err;
       let findings = MOCK_FINDINGS;
       if (params?.severity) {
         findings = findings.filter(f => f.severity === params.severity);
@@ -259,8 +264,9 @@ class ApiClient {
         players: response.players,
         activePlayers: response.active_players || [],
       };
-    } catch {
-      return { players: MOCK_PLAYERS, activePlayers: [] };
+    } catch (err) {
+      if (ENABLE_MOCK_DATA) return { players: MOCK_PLAYERS, activePlayers: [] };
+      throw err;
     }
   }
 
@@ -271,8 +277,9 @@ class ApiClient {
         `/dashboard/${serverId}/modules`
       );
       return response.modules;
-    } catch {
-      return MOCK_MODULES;
+    } catch (err) {
+      if (ENABLE_MOCK_DATA) return MOCK_MODULES;
+      throw err;
     }
   }
 
@@ -287,7 +294,8 @@ class ApiClient {
         method: "POST",
         body: JSON.stringify({ enabled }),
       });
-    } catch {
+    } catch (err) {
+      if (!ENABLE_MOCK_DATA) throw err;
       // In mock mode, just log the toggle
       console.log(`Mock toggle: ${moduleId} -> ${enabled}`);
     }
