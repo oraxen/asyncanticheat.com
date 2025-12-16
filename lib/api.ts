@@ -109,27 +109,151 @@ interface StatusResponse {
 
 // Mock data for demo mode
 const MOCK_PLAYERS: Player[] = [
-  { uuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", username: "xX_Hacker_Xx", findings_count: 23, highest_severity: "critical", last_seen: new Date(Date.now() - 30 * 60000).toISOString(), detectors: ["fight_speed", "fight_reach", "fight_angle"] },
-  { uuid: "b2c3d4e5-f6a7-8901-bcde-f12345678901", username: "SuspiciousPlayer", findings_count: 8, highest_severity: "high", last_seen: new Date(Date.now() - 35 * 60000).toISOString(), detectors: ["moving_speed", "fight_speed"] },
-  { uuid: "c3d4e5f6-a7b8-9012-cdef-123456789012", username: "TestUser123", findings_count: 15, highest_severity: "high", last_seen: new Date(Date.now() - 38 * 60000).toISOString(), detectors: ["fight_reach", "moving_nofall"] },
-  { uuid: "d4e5f6a7-b8c9-0123-def0-234567890123", username: "CoolGamer", findings_count: 3, highest_severity: "low", last_seen: new Date(Date.now() - 42 * 60000).toISOString(), detectors: ["moving_nofall"] },
+  {
+    uuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    username: "xX_Hacker_Xx",
+    findings_count: 23,
+    highest_severity: "critical",
+    last_seen: new Date(Date.now() - 30 * 60000).toISOString(),
+    detectors: ["fight_speed", "fight_reach", "fight_angle"],
+  },
+  {
+    uuid: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    username: "SuspiciousPlayer",
+    findings_count: 8,
+    highest_severity: "high",
+    last_seen: new Date(Date.now() - 35 * 60000).toISOString(),
+    detectors: ["moving_speed", "fight_speed"],
+  },
+  {
+    uuid: "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    username: "TestUser123",
+    findings_count: 15,
+    highest_severity: "high",
+    last_seen: new Date(Date.now() - 38 * 60000).toISOString(),
+    detectors: ["fight_reach", "moving_nofall"],
+  },
+  {
+    uuid: "d4e5f6a7-b8c9-0123-def0-234567890123",
+    username: "CoolGamer",
+    findings_count: 3,
+    highest_severity: "low",
+    last_seen: new Date(Date.now() - 42 * 60000).toISOString(),
+    detectors: ["moving_nofall"],
+  },
 ];
 
 const MOCK_FINDINGS: Finding[] = [
-  { id: "1", player_uuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", player_name: "xX_Hacker_Xx", detector_name: "fight_speed", severity: "high", title: "18.5 APS", description: "Attack speed exceeds normal limits", created_at: new Date(Date.now() - 30 * 60000).toISOString() },
-  { id: "2", player_uuid: "b2c3d4e5-f6a7-8901-bcde-f12345678901", player_name: "SuspiciousPlayer", detector_name: "moving_speed", severity: "medium", title: "15.2 b/s", description: "Movement speed above threshold", created_at: new Date(Date.now() - 35 * 60000).toISOString() },
-  { id: "3", player_uuid: "c3d4e5f6-a7b8-9012-cdef-123456789012", player_name: "TestUser123", detector_name: "fight_reach", severity: "high", title: "4.8 blocks", description: "Combat reach extended", created_at: new Date(Date.now() - 38 * 60000).toISOString() },
-  { id: "4", player_uuid: "d4e5f6a7-b8c9-0123-def0-234567890123", player_name: "CoolGamer", detector_name: "moving_nofall", severity: "low", title: "No fall damage", description: "Player took no fall damage", created_at: new Date(Date.now() - 42 * 60000).toISOString() },
-  { id: "5", player_uuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", player_name: "xX_Hacker_Xx", detector_name: "fight_reach", severity: "critical", title: "6.2 blocks", description: "Extreme combat reach", created_at: new Date(Date.now() - 48 * 60000).toISOString() },
-  { id: "6", player_uuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", player_name: "xX_Hacker_Xx", detector_name: "fight_angle", severity: "high", title: "87° rotation", description: "Impossible head rotation", created_at: new Date(Date.now() - 2 * 3600000).toISOString() },
-  { id: "7", player_uuid: "b2c3d4e5-f6a7-8901-bcde-f12345678901", player_name: "SuspiciousPlayer", detector_name: "fight_speed", severity: "high", title: "16.2 APS", description: "Auto-clicker pattern detected", created_at: new Date(Date.now() - 2.75 * 3600000).toISOString() },
-  { id: "8", player_uuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", player_name: "xX_Hacker_Xx", detector_name: "fight_speed", severity: "critical", title: "22.1 APS", description: "Extreme attack speed", created_at: new Date(Date.now() - 24 * 3600000).toISOString() },
+  {
+    id: "1",
+    player_uuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    player_name: "xX_Hacker_Xx",
+    detector_name: "fight_speed",
+    severity: "high",
+    title: "18.5 APS",
+    description: "Attack speed exceeds normal limits",
+    created_at: new Date(Date.now() - 30 * 60000).toISOString(),
+  },
+  {
+    id: "2",
+    player_uuid: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    player_name: "SuspiciousPlayer",
+    detector_name: "moving_speed",
+    severity: "medium",
+    title: "15.2 b/s",
+    description: "Movement speed above threshold",
+    created_at: new Date(Date.now() - 35 * 60000).toISOString(),
+  },
+  {
+    id: "3",
+    player_uuid: "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    player_name: "TestUser123",
+    detector_name: "fight_reach",
+    severity: "high",
+    title: "4.8 blocks",
+    description: "Combat reach extended",
+    created_at: new Date(Date.now() - 38 * 60000).toISOString(),
+  },
+  {
+    id: "4",
+    player_uuid: "d4e5f6a7-b8c9-0123-def0-234567890123",
+    player_name: "CoolGamer",
+    detector_name: "moving_nofall",
+    severity: "low",
+    title: "No fall damage",
+    description: "Player took no fall damage",
+    created_at: new Date(Date.now() - 42 * 60000).toISOString(),
+  },
+  {
+    id: "5",
+    player_uuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    player_name: "xX_Hacker_Xx",
+    detector_name: "fight_reach",
+    severity: "critical",
+    title: "6.2 blocks",
+    description: "Extreme combat reach",
+    created_at: new Date(Date.now() - 48 * 60000).toISOString(),
+  },
+  {
+    id: "6",
+    player_uuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    player_name: "xX_Hacker_Xx",
+    detector_name: "fight_angle",
+    severity: "high",
+    title: "87° rotation",
+    description: "Impossible head rotation",
+    created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
+  },
+  {
+    id: "7",
+    player_uuid: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    player_name: "SuspiciousPlayer",
+    detector_name: "fight_speed",
+    severity: "high",
+    title: "16.2 APS",
+    description: "Auto-clicker pattern detected",
+    created_at: new Date(Date.now() - 2.75 * 3600000).toISOString(),
+  },
+  {
+    id: "8",
+    player_uuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    player_name: "xX_Hacker_Xx",
+    detector_name: "fight_speed",
+    severity: "critical",
+    title: "22.1 APS",
+    description: "Extreme attack speed",
+    created_at: new Date(Date.now() - 24 * 3600000).toISOString(),
+  },
 ];
 
 const MOCK_MODULES: Module[] = [
-  { id: "1", name: "NCP Core", base_url: "http://127.0.0.1:4010", enabled: true, healthy: true, last_error: null, detections: 847 },
-  { id: "2", name: "Demo Module", base_url: "http://127.0.0.1:4011", enabled: true, healthy: true, last_error: null, detections: 156 },
-  { id: "3", name: "Inventory Guard", base_url: "http://127.0.0.1:4012", enabled: false, healthy: true, last_error: null, detections: 234 },
+  {
+    id: "1",
+    name: "NCP Core",
+    base_url: "http://127.0.0.1:4010",
+    enabled: true,
+    healthy: true,
+    last_error: null,
+    detections: 847,
+  },
+  {
+    id: "2",
+    name: "Demo Module",
+    base_url: "http://127.0.0.1:4011",
+    enabled: true,
+    healthy: true,
+    last_error: null,
+    detections: 156,
+  },
+  {
+    id: "3",
+    name: "Inventory Guard",
+    base_url: "http://127.0.0.1:4012",
+    enabled: false,
+    healthy: true,
+    last_error: null,
+    detections: 234,
+  },
 ];
 
 const MOCK_STATS: DashboardStats = {
@@ -242,11 +366,13 @@ class ApiClient {
       if (!ENABLE_MOCK_DATA) throw err;
       let findings = MOCK_FINDINGS;
       if (params?.severity) {
-        findings = findings.filter(f => f.severity === params.severity);
+        findings = findings.filter((f) => f.severity === params.severity);
       }
       if (params?.player) {
         const wanted = params.player.toLowerCase();
-        findings = findings.filter(f => (f.player_name || "Unknown").toLowerCase() === wanted);
+        findings = findings.filter(
+          (f) => (f.player_name || "Unknown").toLowerCase() === wanted
+        );
       }
       return { findings, total: findings.length };
     }
@@ -334,4 +460,3 @@ export const api = new ApiClient();
 
 // Export class for custom instances
 export { ApiClient };
-
