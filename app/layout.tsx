@@ -2,7 +2,20 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Head } from "nextra/components";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Cinzel, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
+
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const cormorantGaramond = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://asyncanticheat.com"),
@@ -59,7 +72,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </Head>
-      <body className="min-h-dvh bg-mesh-subtle">
+      <body className={`${cinzel.variable} ${cormorantGaramond.variable} min-h-dvh bg-mesh-subtle`}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

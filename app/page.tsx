@@ -12,6 +12,7 @@ import {
   RiGithubFill,
   RiExternalLinkLine,
 } from "@remixicon/react";
+import HeroImage from "@/app/components/ui/HeroImage";
 
 // FAQ Item Component
 function FaqItem({
@@ -125,24 +126,14 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero Section with HackedServer Thread */}
+      {/* Hero Section with Thread Showcase */}
       <main>
-        <section className="mx-auto max-w-3xl px-4 py-12">
-          {/* Thread Showcase */}
-          <div className="relative rounded-lg border border-[rgb(var(--border))] surface-1 p-1.5 overflow-hidden">
-            <div className="relative aspect-[16/9] overflow-hidden rounded bg-[rgb(var(--background))]">
-              <iframe
-                src="https://hackedserver.org/thread/index.html?mode=embedded"
-                className="absolute inset-0 h-full w-full"
-                title="HackedServer Thread Showcase"
-                sandbox="allow-scripts allow-same-origin"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-          </div>
+        <section className="mx-auto max-w-5xl px-4 py-12">
+          {/* Thread Slideshow */}
+          <HeroImage />
 
           {/* CTA Buttons */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/dashboard"
               className="inline-flex items-center gap-2 rounded-md bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600 transition-colors"
