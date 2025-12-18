@@ -303,37 +303,29 @@ function AddModuleModal({
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {availableModules.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-white/60 mb-2">
-                Quick Select
+              <label className="block text-xs font-medium text-white/60 mb-3">
+                Select a module to add
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
                 {availableModules.map((m) => {
                   const meta = moduleDescriptions[m];
+                  const port = defaultPorts[m];
                   return (
                     <button
                       key={m}
                       onClick={() => handleSelectModule(m)}
                       className={cn(
-                        "p-3 rounded-lg text-left transition-all border",
+                        "w-full p-4 rounded-xl text-left transition-all border",
                         name === m
                           ? "bg-indigo-500/10 border-indigo-500/50"
-                          : "bg-white/[0.02] border-white/[0.04] hover:border-white/[0.08]"
+                          : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.03]"
                       )}
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-white">{m}</span>
-                        <span
-                          className={cn(
-                            "px-1.5 py-0.5 rounded text-[9px] font-medium",
-                            meta.tier === "core"
-                              ? "bg-emerald-500/20 text-emerald-400"
-                              : "bg-indigo-500/20 text-indigo-400"
-                          )}
-                        >
-                          {meta.tier}
-                        </span>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-white">{m}</span>
+                        <span className="text-xs text-white/30 font-mono">:{port}</span>
                       </div>
-                      <p className="text-[10px] text-white/40">{meta.short}</p>
+                      <p className="text-xs text-white/50">{meta.short}</p>
                     </button>
                   );
                 })}
@@ -368,22 +360,18 @@ function AddModuleModal({
           </div>
 
           {name && moduleDescriptions[name] && (
-            <div className="p-3 rounded-lg bg-white/[0.02]">
-              <p className="text-xs text-white/60 mb-2">Checks included:</p>
-              <div className="flex flex-wrap gap-1">
-                {(moduleChecks[name] || []).slice(0, 5).map((c) => (
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+              <p className="text-xs text-white/50 mb-3">{moduleDescriptions[name].full}</p>
+              <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Checks</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(moduleChecks[name] || []).map((c) => (
                   <span
                     key={c}
-                    className="px-1.5 py-0.5 rounded text-[9px] text-white/40 bg-white/[0.04] font-mono"
+                    className="px-2 py-1 rounded-md text-[10px] text-white/50 bg-white/[0.04] font-mono"
                   >
                     {c.split("_").slice(-1)[0]}
                   </span>
                 ))}
-                {(moduleChecks[name] || []).length > 5 && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] text-white/30">
-                    +{(moduleChecks[name] || []).length - 5} more
-                  </span>
-                )}
               </div>
             </div>
           )}
@@ -437,19 +425,7 @@ function ModuleDetailPanel({
           <RiArrowLeftLine className="w-4 h-4 text-white/40 group-hover:text-white/80 transition-colors" />
         </button>
         <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-white">{module.name}</h2>
-            <span
-              className={cn(
-                "px-1.5 py-0.5 rounded text-[9px] font-medium",
-                module.tier === "core"
-                  ? "bg-emerald-500/20 text-emerald-400"
-                  : "bg-indigo-500/20 text-indigo-400"
-              )}
-            >
-              {module.tier}
-            </span>
-          </div>
+          <h2 className="text-lg font-semibold text-white">{module.name}</h2>
           <p className="text-xs text-white/40">{module.description}</p>
         </div>
         <button
@@ -640,21 +616,9 @@ function ModuleCard({
           />
         </div>
         <div className="min-w-0 pr-16">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium text-white truncate">
-              {module.name}
-            </h3>
-            <span
-              className={cn(
-                "px-1.5 py-0.5 rounded text-[9px] font-medium flex-shrink-0",
-                module.tier === "core"
-                  ? "bg-emerald-500/20 text-emerald-400"
-                  : "bg-indigo-500/20 text-indigo-400"
-              )}
-            >
-              {module.tier}
-            </span>
-          </div>
+          <h3 className="text-sm font-medium text-white truncate">
+            {module.name}
+          </h3>
           <p className="text-xs text-white/40 truncate">{module.description}</p>
         </div>
       </div>
