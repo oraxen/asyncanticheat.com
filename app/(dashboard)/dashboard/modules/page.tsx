@@ -785,27 +785,32 @@ export default function ModulesPage() {
   };
 
   const handleAddModule = async (module: { name: string; base_url: string }) => {
-    // For now, just close the modal - API endpoint for adding modules would go here
-    console.log("Adding module:", module);
-    setShowAddModal(false);
-    // Refresh modules list
-    if (selectedServerId) {
-      const apiModules = await api.getModules(selectedServerId);
-      const installedModules: InstalledModule[] = apiModules.map((m) => ({
-        ...m,
-        checks: moduleChecks[m.name] || ["unknown_check"],
-        description: moduleDescriptions[m.name]?.short || m.base_url,
+    if (!selectedServerId) return;
+    
+    try {
+      // Create the module via API
+      const newModule = await api.createModule(selectedServerId, module.name, module.base_url);
+      
+      // Add to local state
+      const installedModule: InstalledModule = {
+        ...newModule,
+        checks: moduleChecks[newModule.name] || ["unknown_check"],
+        description: moduleDescriptions[newModule.name]?.short || newModule.base_url,
         fullDescription:
-          moduleDescriptions[m.name]?.full || `Module running at ${m.base_url}`,
-        tier: moduleDescriptions[m.name]?.tier || "core",
+          moduleDescriptions[newModule.name]?.full || `Module running at ${newModule.base_url}`,
+        tier: moduleDescriptions[newModule.name]?.tier || "core",
         version: "1.0.0",
         stats: {
-          detections: m.detections,
-          falsePositives: Math.floor(m.detections * 0.003),
-          accuracy: deterministicAccuracy(m.id ?? m.name),
+          detections: newModule.detections,
+          falsePositives: Math.floor(newModule.detections * 0.003),
+          accuracy: deterministicAccuracy(newModule.id ?? newModule.name),
         },
-      }));
-      setModules(installedModules);
+      };
+      
+      setModules((prev) => [...prev, installedModule]);
+      setShowAddModal(false);
+    } catch (err) {
+      console.error("Failed to add module:", err);
     }
   };
 

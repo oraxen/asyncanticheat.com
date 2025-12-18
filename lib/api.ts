@@ -454,6 +454,38 @@ class ApiClient {
     }
   }
 
+  // Create a new module
+  async createModule(
+    serverId: string,
+    name: string,
+    baseUrl: string
+  ): Promise<Module> {
+    try {
+      const response = await this.fetch<{ ok: boolean; module: Module }>(
+        `/dashboard/${serverId}/modules`,
+        {
+          method: "POST",
+          body: JSON.stringify({ name, base_url: baseUrl }),
+        }
+      );
+      return response.module;
+    } catch (err) {
+      if (ENABLE_MOCK_DATA) {
+        // Return a mock module
+        return {
+          id: crypto.randomUUID(),
+          name,
+          base_url: baseUrl,
+          enabled: true,
+          healthy: true,
+          last_error: null,
+          detections: 0,
+        };
+      }
+      throw err;
+    }
+  }
+
   // Get connection status and metrics
   async getConnectionStatus(serverId: string): Promise<ConnectionMetrics> {
     try {
