@@ -15,111 +15,8 @@ import {
   RiSave2Line,
 } from "@remixicon/react";
 import { cn } from "@/lib/utils";
-import { api, type Module } from "@/lib/api";
+import { api, type BuiltinModuleInfo, type Module } from "@/lib/api";
 import { useSelectedServer } from "@/lib/server-context";
-
-// Check metadata for tiered modules (Core + Advanced)
-const moduleChecks: Record<string, string[]> = {
-  "Combat Core": [
-    "combat_core_autoclicker_cps",
-    "combat_core_reach_critical",
-    "combat_core_killaura_multi",
-    "combat_core_noswing",
-  ],
-  "Combat Advanced": [
-    "combat_advanced_aim_headsnap",
-    "combat_advanced_aim_pitchspread",
-    "combat_advanced_aim_sensitivity",
-    "combat_advanced_aim_modulo",
-    "combat_advanced_aim_dirswitch",
-    "combat_advanced_aim_repeated_yaw",
-    "combat_advanced_autoclicker_timing",
-    "combat_advanced_autoclicker_variance",
-    "combat_advanced_autoclicker_kurtosis",
-    "combat_advanced_autoclicker_tickalign",
-    "combat_advanced_killaura_post",
-    "combat_advanced_reach_distance",
-  ],
-  "Movement Core": [
-    "movement_core_flight_ascend",
-    "movement_core_speed_blatant",
-    "movement_core_nofall_ground",
-    "movement_core_groundspoof_fall",
-    "movement_core_groundspoof_ascend",
-  ],
-  "Movement Advanced": [
-    "movement_advanced_flight_ypred",
-    "movement_advanced_flight_hover",
-    "movement_advanced_speed_sprint",
-    "movement_advanced_speed_sneak",
-    "movement_advanced_timer_fast",
-    "movement_advanced_timer_slow",
-    "movement_advanced_step_height",
-    "movement_advanced_noslow_item",
-  ],
-  "Player Core": [
-    "player_core_badpackets_pitch",
-    "player_core_badpackets_nan",
-    "player_core_badpackets_abilities",
-    "player_core_badpackets_slot",
-    "player_core_fastplace_critical",
-    "player_core_fastbreak_critical",
-    "player_core_scaffold_airborne",
-  ],
-  "Player Advanced": [
-    "player_advanced_interact_angle",
-    "player_advanced_interact_impossible",
-    "player_advanced_inventory_fast",
-    "player_advanced_fastplace",
-    "player_advanced_fastbreak",
-    "player_advanced_scaffold_sprint",
-  ],
-};
-
-const moduleDescriptions: Record<
-  string,
-  { short: string; full: string; tier: "core" | "advanced" }
-> = {
-  "Combat Core": {
-    short: "High-signal combat cheats",
-    full: "Pareto tier: Simple checks catching 80% of combat cheaters. High CPS, critical reach, multi-target switching, and missing arm animations.",
-    tier: "core",
-  },
-  "Combat Advanced": {
-    short: "Statistical combat analysis",
-    full: "Statistical analysis of aim patterns, autoclicker timing distributions, GCD sensitivity checks, and subtle reach accumulation.",
-    tier: "advanced",
-  },
-  "Movement Core": {
-    short: "Blatant movement cheats",
-    full: "Pareto tier: Catches obvious flight, blatant speed, nofall exploits, and ground spoofing with minimal false positives.",
-    tier: "core",
-  },
-  "Movement Advanced": {
-    short: "Subtle movement analysis",
-    full: "Y-prediction physics, hovering detection, sprint/sneak speed limits, timer manipulation, step height, and noslow bypass.",
-    tier: "advanced",
-  },
-  "Player Core": {
-    short: "Obvious packet abuse",
-    full: "Pareto tier: Invalid packets (pitch, NaN, slots), impossible abilities, critical fast place/break, and airborne scaffolding.",
-    tier: "core",
-  },
-  "Player Advanced": {
-    short: "Complex interaction analysis",
-    full: "Interaction angles, rapid inventory clicks, fast place/break accumulation, and sprint-while-bridging detection.",
-    tier: "advanced",
-  },
-};
-
-const defaultPorts: Record<string, number> = {
-  "Movement Core": 4030,
-  "Movement Advanced": 4031,
-  "Combat Core": 4032,
-  "Combat Advanced": 4033,
-  "Player Core": 4034,
-  "Player Advanced": 4035,
-};
 
 function hashStringToUnitInterval(input: string): number {
   let h = 0x811c9dc5;
@@ -143,6 +40,60 @@ interface InstalledModule extends Module {
   tier: "core" | "advanced";
   version: string;
   stats: { detections: number; falsePositives: number; accuracy: number };
+}
+
+function builtinMetaFor(
+  name: string,
+  builtinModules: BuiltinModuleInfo[]
+): BuiltinModuleInfo | null {
+  return builtinModules.find((m) => m.name === name) || null;
+}
+
+function toInstalledModule(
+  m: Module,
+  builtinModules: BuiltinModuleInfo[]
+): InstalledModule {
+  const builtin = builtinMetaFor(m.name, builtinModules);
+  const tier: "core" | "advanced" =
+    (m.tier as "core" | "advanced" | undefined) ||
+    builtin?.tier ||
+    (m.name.toLowerCase().includes("advanced") ? "advanced" : "core");
+
+  const checks = (Array.isArray(m.checks) && m.checks.length > 0
+    ? m.checks
+    : builtin?.checks && builtin.checks.length > 0
+      ? builtin.checks
+      : ["unknown_check"]) ?? ["unknown_check"];
+
+  const description =
+    (m.short_description && m.short_description.trim().length > 0
+      ? m.short_description
+      : builtin?.short_description &&
+          builtin.short_description.trim().length > 0
+        ? builtin.short_description
+        : m.base_url) ?? m.base_url;
+
+  const fullDescription =
+    (m.full_description && m.full_description.trim().length > 0
+      ? m.full_description
+      : builtin?.full_description && builtin.full_description.trim().length > 0
+        ? builtin.full_description
+        : `Module running at ${m.base_url}`) ??
+    `Module running at ${m.base_url}`;
+
+  return {
+    ...m,
+    checks,
+    description,
+    fullDescription,
+    tier,
+    version: "1.0.0",
+    stats: {
+      detections: m.detections,
+      falsePositives: Math.floor(m.detections * 0.003),
+      accuracy: deterministicAccuracy(m.id ?? m.name),
+    },
+  };
 }
 
 // Toggle Switch
@@ -269,22 +220,24 @@ function AddModuleModal({
   onClose,
   onAdd,
   existingModules,
+  builtinModules,
 }: {
   onClose: () => void;
   onAdd: (module: { name: string; base_url: string }) => void;
   existingModules: string[];
+  builtinModules: BuiltinModuleInfo[];
 }) {
   const [name, setName] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
 
-  const availableModules = Object.keys(moduleDescriptions).filter(
-    (m) => !existingModules.includes(m)
+  const availableModules = builtinModules.filter(
+    (m) => !existingModules.includes(m.name)
   );
+  const selectedBuiltin = builtinModules.find((m) => m.name === name) || null;
 
-  const handleSelectModule = (moduleName: string) => {
-    setName(moduleName);
-    const port = defaultPorts[moduleName] || 4021;
-    setBaseUrl(`http://127.0.0.1:${port}`);
+  const handleSelectModule = (module: BuiltinModuleInfo) => {
+    setName(module.name);
+    setBaseUrl(module.default_base_url);
   };
 
   return (
@@ -317,28 +270,28 @@ function AddModuleModal({
               </label>
               <div className="space-y-2">
                 {availableModules.map((m) => {
-                  const meta = moduleDescriptions[m];
-                  const port = defaultPorts[m];
                   return (
                     <button
-                      key={m}
+                      key={m.name}
                       onClick={() => handleSelectModule(m)}
                       className={cn(
                         "w-full p-4 rounded-xl text-left transition-all border",
-                        name === m
+                        name === m.name
                           ? "bg-indigo-500/10 border-indigo-500/50"
                           : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.03]"
                       )}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-white">
-                          {m}
+                          {m.name}
                         </span>
                         <span className="text-xs text-white/30 font-mono">
-                          :{port}
+                          :{m.default_port}
                         </span>
                       </div>
-                      <p className="text-xs text-white/50">{meta.short}</p>
+                      <p className="text-xs text-white/50">
+                        {m.short_description}
+                      </p>
                     </button>
                   );
                 })}
@@ -372,16 +325,16 @@ function AddModuleModal({
             />
           </div>
 
-          {name && moduleDescriptions[name] && (
+          {name && selectedBuiltin && (
             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
               <p className="text-xs text-white/50 mb-3">
-                {moduleDescriptions[name].full}
+                {selectedBuiltin.full_description}
               </p>
               <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">
                 Checks
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {(moduleChecks[name] || []).map((c) => (
+                {selectedBuiltin.checks.map((c) => (
                   <span
                     key={c}
                     className="px-2 py-1 rounded-md text-[10px] text-white/50 bg-white/[0.04] font-mono"
@@ -688,6 +641,7 @@ function AddModuleCard({ onClick }: { onClick: () => void }) {
 
 export default function ModulesPage() {
   const [modules, setModules] = useState<InstalledModule[]>([]);
+  const [builtinModules, setBuiltinModules] = useState<BuiltinModuleInfo[]>([]);
   const [selectedModule, setSelectedModule] = useState<InstalledModule | null>(
     null
   );
@@ -706,6 +660,7 @@ export default function ModulesPage() {
       currentServerIdRef.current = null;
       setSelectedModule(null);
       setModules([]);
+      setBuiltinModules([]);
       setError(null);
       setLoading(false);
       return;
@@ -721,25 +676,14 @@ export default function ModulesPage() {
         setLoading(true);
         setError(null);
 
-        const apiModules = await api.getModules(serverId);
-
-        const installedModules: InstalledModule[] = apiModules.map((m) => ({
-          ...m,
-          checks: moduleChecks[m.name] || ["unknown_check"],
-          description: moduleDescriptions[m.name]?.short || m.base_url,
-          fullDescription:
-            moduleDescriptions[m.name]?.full ||
-            `Module running at ${m.base_url}`,
-          tier: moduleDescriptions[m.name]?.tier || "core",
-          version: "1.0.0",
-          stats: {
-            detections: m.detections,
-            falsePositives: Math.floor(m.detections * 0.003),
-            accuracy: deterministicAccuracy(m.id ?? m.name),
-          },
-        }));
+        const { modules: apiModules, builtinModules: builtins } =
+          await api.getModules(serverId);
+        const installedModules: InstalledModule[] = apiModules.map((m) =>
+          toInstalledModule(m, builtins)
+        );
 
         if (fetchId !== fetchIdRef.current) return;
+        setBuiltinModules(builtins);
         setModules(installedModules);
       } catch (err) {
         if (fetchId !== fetchIdRef.current) return;
@@ -818,22 +762,10 @@ export default function ModulesPage() {
       );
 
       // Add to local state
-      const installedModule: InstalledModule = {
-        ...newModule,
-        checks: moduleChecks[newModule.name] || ["unknown_check"],
-        description:
-          moduleDescriptions[newModule.name]?.short || newModule.base_url,
-        fullDescription:
-          moduleDescriptions[newModule.name]?.full ||
-          `Module running at ${newModule.base_url}`,
-        tier: moduleDescriptions[newModule.name]?.tier || "core",
-        version: "1.0.0",
-        stats: {
-          detections: newModule.detections,
-          falsePositives: Math.floor(newModule.detections * 0.003),
-          accuracy: deterministicAccuracy(newModule.id ?? newModule.name),
-        },
-      };
+      const installedModule: InstalledModule = toInstalledModule(
+        newModule,
+        builtinModules
+      );
 
       setModules((prev) => [...prev, installedModule]);
       setShowAddModal(false);
@@ -978,6 +910,7 @@ export default function ModulesPage() {
           onClose={() => setShowAddModal(false)}
           onAdd={handleAddModule}
           existingModules={modules.map((m) => m.name)}
+          builtinModules={builtinModules}
         />
       )}
 

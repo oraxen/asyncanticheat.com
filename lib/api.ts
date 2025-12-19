@@ -13,6 +13,8 @@ export interface DashboardStats {
   findings_today: number;
 }
 
+export type BuiltinTier = "core" | "advanced";
+
 export interface Finding {
   id: string;
   player_uuid: string | null;
@@ -50,6 +52,13 @@ export interface Module {
   healthy: boolean;
   last_error: string | null;
   detections: number;
+  // Optional metadata for built-in modules (provided by the API).
+  builtin?: boolean;
+  tier?: BuiltinTier;
+  default_port?: number;
+  short_description?: string | null;
+  full_description?: string | null;
+  checks?: string[];
 }
 
 export interface Server {
@@ -100,6 +109,7 @@ interface PlayersResponse {
 interface ModulesResponse {
   ok: boolean;
   modules: Module[];
+  builtin_modules?: BuiltinModuleInfo[];
 }
 
 interface StatusResponse {
@@ -226,6 +236,26 @@ const MOCK_FINDINGS: Finding[] = [
   },
 ];
 
+export interface BuiltinModuleInfo {
+  name: string;
+  tier: BuiltinTier;
+  default_port: number;
+  default_base_url: string;
+  short_description: string;
+  full_description: string;
+  checks: string[];
+}
+
+function safeParsePort(baseUrl: string): number {
+  try {
+    const u = new URL(baseUrl);
+    const p = Number(u.port);
+    return Number.isFinite(p) ? p : 0;
+  } catch {
+    return 0;
+  }
+}
+
 const MOCK_MODULES: Module[] = [
   {
     id: "combat-core",
@@ -282,6 +312,25 @@ const MOCK_MODULES: Module[] = [
     detections: 45,
   },
 ];
+
+const MOCK_BUILTIN_MODULES: BuiltinModuleInfo[] = (() => {
+  const seen = new Set<string>();
+  const out: BuiltinModuleInfo[] = [];
+  for (const m of MOCK_MODULES) {
+    if (seen.has(m.name)) continue;
+    seen.add(m.name);
+    out.push({
+      name: m.name,
+      tier: m.name.toLowerCase().includes("advanced") ? "advanced" : "core",
+      default_port: safeParsePort(m.base_url),
+      default_base_url: m.base_url,
+      short_description: "",
+      full_description: "",
+      checks: [],
+    });
+  }
+  return out;
+})();
 
 const MOCK_STATS: DashboardStats = {
   total_findings: 1247,
@@ -424,14 +473,21 @@ class ApiClient {
   }
 
   // Get modules for a server
-  async getModules(serverId: string): Promise<Module[]> {
+  async getModules(serverId: string): Promise<{
+    modules: Module[];
+    builtinModules: BuiltinModuleInfo[];
+  }> {
     try {
       const response = await this.fetch<ModulesResponse>(
         `/dashboard/${serverId}/modules`
       );
-      return response.modules;
+      return {
+        modules: response.modules,
+        builtinModules: response.builtin_modules || [],
+      };
     } catch (err) {
-      if (ENABLE_MOCK_DATA) return MOCK_MODULES;
+      if (ENABLE_MOCK_DATA)
+        return { modules: MOCK_MODULES, builtinModules: MOCK_BUILTIN_MODULES };
       throw err;
     }
   }
