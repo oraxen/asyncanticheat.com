@@ -76,7 +76,10 @@ const moduleChecks: Record<string, string[]> = {
   ],
 };
 
-const moduleDescriptions: Record<string, { short: string; full: string; tier: "core" | "advanced" }> = {
+const moduleDescriptions: Record<
+  string,
+  { short: string; full: string; tier: "core" | "advanced" }
+> = {
   "Combat Core": {
     short: "High-signal combat cheats",
     full: "Pareto tier: Simple checks catching 80% of combat cheaters. High CPS, critical reach, multi-target switching, and missing arm animations.",
@@ -110,12 +113,12 @@ const moduleDescriptions: Record<string, { short: string; full: string; tier: "c
 };
 
 const defaultPorts: Record<string, number> = {
-  "Combat Core": 4021,
-  "Movement Core": 4022,
-  "Player Core": 4023,
-  "Combat Advanced": 4024,
-  "Movement Advanced": 4025,
-  "Player Advanced": 4026,
+  "Movement Core": 4030,
+  "Movement Advanced": 4031,
+  "Combat Core": 4032,
+  "Combat Advanced": 4033,
+  "Player Core": 4034,
+  "Player Advanced": 4035,
 };
 
 function hashStringToUnitInterval(input: string): number {
@@ -203,7 +206,9 @@ function ConfigurationModal({
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] z-50 bg-[#0c0c10] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
           <div>
-            <h2 className="text-lg font-semibold text-white">Configure {module.name}</h2>
+            <h2 className="text-lg font-semibold text-white">
+              Configure {module.name}
+            </h2>
             <p className="text-xs text-white/40">Module settings</p>
           </div>
           <button
@@ -231,7 +236,9 @@ function ConfigurationModal({
           <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02]">
             <div>
               <p className="text-sm font-medium text-white">Enabled</p>
-              <p className="text-xs text-white/40">Module is active and monitoring</p>
+              <p className="text-xs text-white/40">
+                Module is active and monitoring
+              </p>
             </div>
             <Toggle checked={enabled} onChange={setEnabled} />
           </div>
@@ -290,7 +297,9 @@ function AddModuleModal({
         <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
           <div>
             <h2 className="text-lg font-semibold text-white">Add Module</h2>
-            <p className="text-xs text-white/40">Register a new detection module</p>
+            <p className="text-xs text-white/40">
+              Register a new detection module
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -322,8 +331,12 @@ function AddModuleModal({
                       )}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-white">{m}</span>
-                        <span className="text-xs text-white/30 font-mono">:{port}</span>
+                        <span className="text-sm font-medium text-white">
+                          {m}
+                        </span>
+                        <span className="text-xs text-white/30 font-mono">
+                          :{port}
+                        </span>
                       </div>
                       <p className="text-xs text-white/50">{meta.short}</p>
                     </button>
@@ -361,8 +374,12 @@ function AddModuleModal({
 
           {name && moduleDescriptions[name] && (
             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-              <p className="text-xs text-white/50 mb-3">{moduleDescriptions[name].full}</p>
-              <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Checks</p>
+              <p className="text-xs text-white/50 mb-3">
+                {moduleDescriptions[name].full}
+              </p>
+              <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">
+                Checks
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {(moduleChecks[name] || []).map((c) => (
                   <span
@@ -671,7 +688,9 @@ function AddModuleCard({ onClick }: { onClick: () => void }) {
 
 export default function ModulesPage() {
   const [modules, setModules] = useState<InstalledModule[]>([]);
-  const [selectedModule, setSelectedModule] = useState<InstalledModule | null>(null);
+  const [selectedModule, setSelectedModule] = useState<InstalledModule | null>(
+    null
+  );
   const [showAddModal, setShowAddModal] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -784,20 +803,29 @@ export default function ModulesPage() {
     }
   };
 
-  const handleAddModule = async (module: { name: string; base_url: string }) => {
+  const handleAddModule = async (module: {
+    name: string;
+    base_url: string;
+  }) => {
     if (!selectedServerId) return;
-    
+
     try {
       // Create the module via API
-      const newModule = await api.createModule(selectedServerId, module.name, module.base_url);
-      
+      const newModule = await api.createModule(
+        selectedServerId,
+        module.name,
+        module.base_url
+      );
+
       // Add to local state
       const installedModule: InstalledModule = {
         ...newModule,
         checks: moduleChecks[newModule.name] || ["unknown_check"],
-        description: moduleDescriptions[newModule.name]?.short || newModule.base_url,
+        description:
+          moduleDescriptions[newModule.name]?.short || newModule.base_url,
         fullDescription:
-          moduleDescriptions[newModule.name]?.full || `Module running at ${newModule.base_url}`,
+          moduleDescriptions[newModule.name]?.full ||
+          `Module running at ${newModule.base_url}`,
         tier: moduleDescriptions[newModule.name]?.tier || "core",
         version: "1.0.0",
         stats: {
@@ -806,7 +834,7 @@ export default function ModulesPage() {
           accuracy: deterministicAccuracy(newModule.id ?? newModule.name),
         },
       };
-      
+
       setModules((prev) => [...prev, installedModule]);
       setShowAddModal(false);
     } catch (err) {
@@ -814,7 +842,10 @@ export default function ModulesPage() {
     }
   };
 
-  const handleConfigSave = async (config: { base_url: string; enabled: boolean }) => {
+  const handleConfigSave = async (config: {
+    base_url: string;
+    enabled: boolean;
+  }) => {
     // For now, just close the modal - API endpoint for updating config would go here
     console.log("Saving config:", config);
     setShowConfigModal(false);

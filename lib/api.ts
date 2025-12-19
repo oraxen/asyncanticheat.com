@@ -230,7 +230,7 @@ const MOCK_MODULES: Module[] = [
   {
     id: "combat-core",
     name: "Combat Core",
-    base_url: "http://127.0.0.1:4021",
+    base_url: "http://127.0.0.1:4032",
     enabled: true,
     healthy: true,
     last_error: null,
@@ -239,7 +239,7 @@ const MOCK_MODULES: Module[] = [
   {
     id: "movement-core",
     name: "Movement Core",
-    base_url: "http://127.0.0.1:4022",
+    base_url: "http://127.0.0.1:4030",
     enabled: true,
     healthy: true,
     last_error: null,
@@ -248,7 +248,7 @@ const MOCK_MODULES: Module[] = [
   {
     id: "player-core",
     name: "Player Core",
-    base_url: "http://127.0.0.1:4023",
+    base_url: "http://127.0.0.1:4034",
     enabled: true,
     healthy: true,
     last_error: null,
@@ -257,7 +257,7 @@ const MOCK_MODULES: Module[] = [
   {
     id: "combat-advanced",
     name: "Combat Advanced",
-    base_url: "http://127.0.0.1:4024",
+    base_url: "http://127.0.0.1:4033",
     enabled: true,
     healthy: true,
     last_error: null,
@@ -266,7 +266,7 @@ const MOCK_MODULES: Module[] = [
   {
     id: "movement-advanced",
     name: "Movement Advanced",
-    base_url: "http://127.0.0.1:4025",
+    base_url: "http://127.0.0.1:4031",
     enabled: true,
     healthy: true,
     last_error: null,
@@ -275,7 +275,7 @@ const MOCK_MODULES: Module[] = [
   {
     id: "player-advanced",
     name: "Player Advanced",
-    base_url: "http://127.0.0.1:4026",
+    base_url: "http://127.0.0.1:4035",
     enabled: true,
     healthy: true,
     last_error: null,
