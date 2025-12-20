@@ -4,27 +4,32 @@
  * Usage:
  *   bun run scripts/capture-screenshots.ts
  * 
- * Prerequisites:
- *   - bun add -D puppeteer
- *   - You must be logged in to the dashboard in your browser
- *   - The dashboard must be running locally or use the production URL
+ * The script will:
+ *   1. Read dev credentials from secrets.json
+ *   2. Auto-login using magic link or credentials
+ *   3. Capture all dashboard screenshots
+ *   4. Save them to docs-screenshots/
+ * 
+ * Environment variables:
+ *   DASHBOARD_URL - Override the dashboard URL (default: https://asyncanticheat.com)
+ *   DEV_EMAIL - Override login email
+ *   DEV_PASS - Override login password
  */
 
-import puppeteer from "puppeteer";
-import { mkdir } from "fs/promises";
+import puppeteer, { type Page, type Browser } from "puppeteer";
+import { mkdir, readFile } from "fs/promises";
 import { join } from "path";
 
 const BASE_URL = process.env.DASHBOARD_URL || "https://asyncanticheat.com";
 const OUTPUT_DIR = join(import.meta.dir, "../docs-screenshots");
+const SECRETS_PATH = join(import.meta.dir, "../../../secrets.json");
 
 interface Screenshot {
   name: string;
   path: string;
   description: string;
-  actions?: (page: puppeteer.Page) => Promise<void>;
   waitFor?: string;
-  fullPage?: boolean;
-  clip?: { x: number; y: number; width: number; height: number };
+  actions?: (page: Page) => Promise<void>;
 }
 
 const screenshots: Screenshot[] = [
@@ -34,12 +39,6 @@ const screenshots: Screenshot[] = [
     path: "/dashboard",
     description: "Main dashboard overview with global monitor",
     waitFor: "Global Monitor",
-  },
-  {
-    name: "dashboard-connection-status",
-    path: "/dashboard",
-    description: "Connection status panel showing API and plugin connectivity",
-    waitFor: "Connection Status",
   },
 
   // Players Page
@@ -55,27 +54,11 @@ const screenshots: Screenshot[] = [
     description: "Player detail sidebar with session history",
     waitFor: "Players",
     actions: async (page) => {
-      // Click the first player card to open details
-      await page.waitForSelector('button[class*="group"]');
-      await page.click('button[class*="group"]');
-      await new Promise((r) => setTimeout(r, 500));
-    },
-  },
-  {
-    name: "players-report-cheat",
-    path: "/dashboard/players",
-    description: "Report undetected cheat dialog",
-    waitFor: "Players",
-    actions: async (page) => {
-      await page.waitForSelector('button[class*="group"]');
-      await page.click('button[class*="group"]');
-      await new Promise((r) => setTimeout(r, 500));
-      // Look for "Report undetected cheat" button
-      const reportBtn = await page.$('button:has-text("Report")');
-      if (reportBtn) {
-        await reportBtn.click();
-        await new Promise((r) => setTimeout(r, 500));
-      }
+      await page.evaluate(() => {
+        const btn = document.querySelector('button[class*="group"]') as HTMLElement;
+        if (btn) btn.click();
+      });
+      await new Promise((r) => setTimeout(r, 800));
     },
   },
 
@@ -92,28 +75,11 @@ const screenshots: Screenshot[] = [
     description: "Finding detail with player history",
     waitFor: "Findings",
     actions: async (page) => {
-      // Click a finding to view details
-      await page.waitForSelector('button[class*="group"]');
-      const buttons = await page.$$('button[class*="group"]');
-      if (buttons.length > 0) {
-        await buttons[0].click();
-        await new Promise((r) => setTimeout(r, 500));
-      }
-    },
-  },
-  {
-    name: "findings-report-false-positive",
-    path: "/dashboard/findings",
-    description: "Report false positive dialog",
-    waitFor: "Findings",
-    actions: async (page) => {
-      // Click the flag icon to report false positive
-      await page.waitForSelector('[class*="RiFlagLine"], button[title*="false positive"]');
-      const flagBtn = await page.$('[class*="RiFlagLine"]');
-      if (flagBtn) {
-        await flagBtn.click();
-        await new Promise((r) => setTimeout(r, 500));
-      }
+      await page.evaluate(() => {
+        const btn = document.querySelector('button[class*="group"]') as HTMLElement;
+        if (btn) btn.click();
+      });
+      await new Promise((r) => setTimeout(r, 800));
     },
   },
 
@@ -127,15 +93,14 @@ const screenshots: Screenshot[] = [
   {
     name: "modules-detail",
     path: "/dashboard/modules",
-    description: "Module detail with checks and configuration",
+    description: "Module detail with checks",
     waitFor: "Modules",
     actions: async (page) => {
-      await page.waitForSelector('button[class*="group"]');
-      const buttons = await page.$$('button[class*="group"]');
-      if (buttons.length > 0) {
-        await buttons[0].click();
-        await new Promise((r) => setTimeout(r, 500));
-      }
+      await page.evaluate(() => {
+        const btn = document.querySelector('button[class*="group"]') as HTMLElement;
+        if (btn) btn.click();
+      });
+      await new Promise((r) => setTimeout(r, 800));
     },
   },
 
@@ -146,105 +111,206 @@ const screenshots: Screenshot[] = [
     description: "Server settings and configuration",
     waitFor: "Settings",
   },
-
-  // Register Server Flow
-  {
-    name: "register-server",
-    path: "/register-server",
-    description: "Server registration page",
-    waitFor: "Register",
-  },
 ];
 
-async function captureScreenshots() {
-  console.log("📸 Starting screenshot capture...\n");
-
-  // Create output directory
-  await mkdir(OUTPUT_DIR, { recursive: true });
-  console.log(`📁 Output directory: ${OUTPUT_DIR}\n`);
-
-  // Launch browser with user data to preserve auth session
-  const browser = await puppeteer.launch({
-    headless: false, // Set to true for CI
-    defaultViewport: { width: 1512, height: 982 },
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-    ],
-  });
-
-  const page = await browser.newPage();
-
-  // Set a realistic user agent
-  await page.setUserAgent(
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-  );
-
-  console.log("🔐 Please log in to the dashboard in the browser window...");
-  console.log("   The script will wait for you to complete login.\n");
-
-  // Navigate to dashboard and wait for login
-  await page.goto(`${BASE_URL}/dashboard`, { waitUntil: "networkidle2" });
-
-  // Check if we're on login page
-  const isLoginPage = await page.evaluate(() => {
-    return window.location.pathname === "/login";
-  });
-
-  if (isLoginPage) {
-    console.log("⏳ Waiting for login... (complete login in the browser)");
-    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 300000 });
+async function getCredentials(): Promise<{ email: string; pass: string } | null> {
+  // Check environment variables first
+  if (process.env.DEV_EMAIL && process.env.DEV_PASS) {
+    return { email: process.env.DEV_EMAIL, pass: process.env.DEV_PASS };
   }
 
-  // Wait for dashboard to load
-  await page.waitForSelector("text=Global Monitor", { timeout: 30000 });
-  console.log("✅ Logged in successfully!\n");
-
-  // Capture each screenshot
-  for (const screenshot of screenshots) {
-    console.log(`📷 Capturing: ${screenshot.name}`);
-    console.log(`   Path: ${screenshot.path}`);
-
-    try {
-      // Navigate to the page
-      await page.goto(`${BASE_URL}${screenshot.path}`, {
-        waitUntil: "networkidle2",
-      });
-
-      // Wait for specific element if specified
-      if (screenshot.waitFor) {
-        await page.waitForSelector(`text=${screenshot.waitFor}`, {
-          timeout: 10000,
-        });
-      }
-
-      // Allow page to settle
-      await new Promise((r) => setTimeout(r, 1000));
-
-      // Execute custom actions if any
-      if (screenshot.actions) {
-        await screenshot.actions(page);
-        await new Promise((r) => setTimeout(r, 500));
-      }
-
-      // Take screenshot
-      const outputPath = join(OUTPUT_DIR, `${screenshot.name}.png`);
-      await page.screenshot({
-        path: outputPath,
-        fullPage: screenshot.fullPage ?? false,
-        clip: screenshot.clip,
-      });
-
-      console.log(`   ✅ Saved: ${outputPath}\n`);
-    } catch (error) {
-      console.log(`   ❌ Failed: ${error}\n`);
+  // Read from secrets.json
+  try {
+    const secrets = JSON.parse(await readFile(SECRETS_PATH, "utf-8"));
+    const devUser = secrets.projects?.asyncanticheat?.website?.dev_user;
+    if (devUser?.email && devUser?.pass) {
+      return { email: devUser.email, pass: devUser.pass };
     }
+  } catch {
+    // Secrets file not found or invalid
   }
 
-  await browser.close();
-
-  console.log("\n🎉 Screenshot capture complete!");
-  console.log(`📁 Screenshots saved to: ${OUTPUT_DIR}`);
+  return null;
 }
 
-captureScreenshots().catch(console.error);
+async function loginWithCredentials(page: Page, email: string, password: string): Promise<boolean> {
+  console.log(`🔐 Logging in as ${email}...`);
+
+  try {
+    // Wait for login page to load
+    await page.waitForSelector('input[type="email"], input[placeholder*="email"]', { timeout: 10000 });
+
+    // Find and fill email input
+    const emailInput = await page.$('input[type="email"], input[placeholder*="email"]');
+    if (emailInput) {
+      await emailInput.click({ clickCount: 3 });
+      await emailInput.type(email);
+    }
+
+    // Small delay
+    await new Promise((r) => setTimeout(r, 500));
+
+    // Click the "Send magic link" button
+    // Use page.evaluate to find and click button by text content
+    const clicked = await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const magicBtn = buttons.find(btn => 
+        btn.textContent?.toLowerCase().includes('magic link') ||
+        btn.textContent?.toLowerCase().includes('send')
+      );
+      if (magicBtn) {
+        magicBtn.click();
+        return true;
+      }
+      return false;
+    });
+
+    if (clicked) {
+      console.log("📧 Magic link requested! Check your email...");
+      console.log("   (Or log in manually in the browser window)");
+    }
+
+    // Wait for navigation away from login (either magic link or manual)
+    await page.waitForFunction(
+      () => !window.location.pathname.includes("/login"),
+      { timeout: 300000 } // 5 min timeout for magic link
+    );
+
+    return true;
+  } catch (error) {
+    console.log(`⚠️  Auto-login failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+    return false;
+  }
+}
+
+async function waitForDashboard(page: Page): Promise<void> {
+  const maxWait = 5 * 60 * 1000; // 5 minutes
+  const start = Date.now();
+
+  while (Date.now() - start < maxWait) {
+    const url = page.url();
+    
+    if (url.includes("/dashboard") && !url.includes("/login")) {
+      try {
+        await page.waitForSelector("nav", { timeout: 2000 });
+        return;
+      } catch {
+        // Keep waiting
+      }
+    }
+    
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  
+  throw new Error("Timeout waiting for dashboard");
+}
+
+async function captureScreenshots(): Promise<void> {
+  console.log("📸 AsyncAnticheat Documentation Screenshot Capture\n");
+  console.log(`📁 Output: ${OUTPUT_DIR}`);
+  console.log(`🌐 URL: ${BASE_URL}\n`);
+
+  await mkdir(OUTPUT_DIR, { recursive: true });
+
+  const credentials = await getCredentials();
+  if (credentials) {
+    console.log(`👤 Found dev credentials for: ${credentials.email}\n`);
+  } else {
+    console.log("⚠️  No credentials found in secrets.json - manual login required\n");
+  }
+
+  let browser: Browser | null = null;
+
+  try {
+    browser = await puppeteer.launch({
+      headless: false,
+      defaultViewport: { width: 1440, height: 900 },
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1440, height: 900 });
+
+    // Navigate to dashboard
+    console.log("🌐 Navigating to dashboard...");
+    await page.goto(`${BASE_URL}/dashboard`, { 
+      waitUntil: "networkidle2",
+      timeout: 60000 
+    });
+
+    // Check if login required
+    if (page.url().includes("/login")) {
+      let loggedIn = false;
+
+      if (credentials) {
+        loggedIn = await loginWithCredentials(page, credentials.email, credentials.pass);
+      }
+
+      if (!loggedIn) {
+        console.log("\n━".repeat(50));
+        console.log("👆 Please log in using the browser window above");
+        console.log("   The script will continue automatically after login");
+        console.log("━".repeat(50) + "\n");
+      }
+    }
+
+    // Wait for dashboard to load
+    await waitForDashboard(page);
+    console.log("✅ Dashboard loaded!\n");
+
+    // Small delay for UI to settle
+    await new Promise((r) => setTimeout(r, 2000));
+
+    // Capture each screenshot
+    let captured = 0;
+    for (const screenshot of screenshots) {
+      process.stdout.write(`📷 ${screenshot.name}... `);
+
+      try {
+        await page.goto(`${BASE_URL}${screenshot.path}`, {
+          waitUntil: "networkidle2",
+          timeout: 30000,
+        });
+
+        // Wait for page content
+        if (screenshot.waitFor) {
+          await page.waitForFunction(
+            (text) => document.body.innerText.includes(text),
+            { timeout: 10000 },
+            screenshot.waitFor
+          );
+        }
+
+        // Let animations settle
+        await new Promise((r) => setTimeout(r, 1500));
+
+        // Execute custom actions
+        if (screenshot.actions) {
+          await screenshot.actions(page);
+        }
+
+        // Take screenshot
+        const outputPath = join(OUTPUT_DIR, `${screenshot.name}.png`);
+        await page.screenshot({ path: outputPath });
+        
+        console.log("✅");
+        captured++;
+      } catch (error) {
+        console.log(`❌ ${error instanceof Error ? error.message : "Failed"}`);
+      }
+    }
+
+    console.log(`\n🎉 Done! Captured ${captured}/${screenshots.length} screenshots`);
+    console.log(`📁 Saved to: ${OUTPUT_DIR}`);
+
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+}
+
+captureScreenshots().catch((err) => {
+  console.error("\n❌ Error:", err.message);
+  process.exit(1);
+});
