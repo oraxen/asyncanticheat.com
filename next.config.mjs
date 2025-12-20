@@ -19,4 +19,9 @@ export default withNextra({
     // Disable optimizeCss which processes all CSS with PostCSS
     optimizeCss: false,
   },
+  images: {
+    // Disable image optimization for static docs screenshots
+    // They're already optimized as high-quality WebP
+    unoptimized: true,
+  },
 });
