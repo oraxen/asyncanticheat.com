@@ -24,7 +24,7 @@ import sharp from "sharp";
 const BASE_URL = process.env.DASHBOARD_URL || "https://asyncanticheat.com";
 const OUTPUT_DIR = join(import.meta.dir, "../public/docs");
 const SECRETS_PATH = join(import.meta.dir, "../../../secrets.json");
-const WEBP_QUALITY = 95;
+const WEBP_QUALITY = 98;
 
 interface Screenshot {
   name: string;
