@@ -8,7 +8,7 @@
  *   1. Read dev credentials from secrets.json
  *   2. Auto-login using magic link or credentials
  *   3. Capture all dashboard screenshots
- *   4. Save them to docs-screenshots/
+ *   4. Save them as WebP (95% quality) to public/docs/
  * 
  * Environment variables:
  *   DASHBOARD_URL - Override the dashboard URL (default: https://asyncanticheat.com)
@@ -19,10 +19,12 @@
 import puppeteer, { type Page, type Browser } from "puppeteer";
 import { mkdir, readFile } from "fs/promises";
 import { join } from "path";
+import sharp from "sharp";
 
 const BASE_URL = process.env.DASHBOARD_URL || "https://asyncanticheat.com";
-const OUTPUT_DIR = join(import.meta.dir, "../docs-screenshots");
+const OUTPUT_DIR = join(import.meta.dir, "../public/docs");
 const SECRETS_PATH = join(import.meta.dir, "../../../secrets.json");
+const WEBP_QUALITY = 95;
 
 interface Screenshot {
   name: string;
@@ -305,9 +307,13 @@ async function captureScreenshots(): Promise<void> {
           await screenshot.actions(page);
         }
 
-        // Take screenshot
-        const outputPath = join(OUTPUT_DIR, `${screenshot.name}.png`);
-        await page.screenshot({ path: outputPath });
+        // Take screenshot as PNG buffer, then convert to WebP
+        const pngBuffer = await page.screenshot({ encoding: "binary" });
+        const outputPath = join(OUTPUT_DIR, `${screenshot.name}.webp`);
+        
+        await sharp(pngBuffer)
+          .webp({ quality: WEBP_QUALITY })
+          .toFile(outputPath);
         
         console.log("✅");
         captured++;
