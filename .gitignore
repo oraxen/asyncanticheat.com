@@ -49,3 +49,6 @@ next-env.d.ts
 
 # Documentation screenshots (generated)
 docs-screenshots/
+
+# Secrets
+secrets.json
