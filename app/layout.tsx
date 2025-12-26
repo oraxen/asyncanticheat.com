@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Head } from "nextra/components";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PWAInstallBanner } from "@/components/pwa/install-banner";
 import { Cinzel, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 
@@ -73,7 +74,10 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </Head>
       <body className={`${cinzel.variable} ${cormorantGaramond.variable} min-h-dvh bg-mesh-subtle`}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <PWAInstallBanner />
+        </ThemeProvider>
       </body>
     </html>
   );

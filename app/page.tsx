@@ -11,6 +11,8 @@ import {
   RiArrowDownSLine,
   RiGithubFill,
   RiExternalLinkLine,
+  RiMenuLine,
+  RiCloseLine,
 } from "@remixicon/react";
 import HeroImage from "@/app/components/ui/HeroImage";
 
@@ -82,6 +84,8 @@ function FeatureCard({
 }
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen surface-0">
       {/* Header */}
@@ -117,13 +121,66 @@ export default function HomePage() {
             </Link>
           </nav>
 
-          <Link
-            href="/docs"
-            className="inline-flex items-center rounded-md bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-600 transition-colors"
-          >
-            View Docs
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/docs"
+              className="hidden sm:inline-flex items-center rounded-md bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-600 transition-colors"
+            >
+              View Docs
+            </Link>
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-md hover:bg-[rgb(var(--foreground))]/10 transition-colors"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {mobileMenuOpen ? (
+                <RiCloseLine className="h-5 w-5 text-[rgb(var(--foreground))]" />
+              ) : (
+                <RiMenuLine className="h-5 w-5 text-[rgb(var(--foreground))]" />
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-[rgb(var(--border))] surface-1 animate-fade-in">
+            <nav className="mx-auto max-w-5xl px-4 py-3 flex flex-col gap-1">
+              <Link
+                href="https://github.com/oraxen/asyncanticheat"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium text-[rgb(var(--foreground-secondary))] hover:text-[rgb(var(--foreground))] hover:bg-[rgb(var(--foreground))]/5 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <RiGithubFill className="h-4 w-4" />
+                GitHub
+              </Link>
+              <Link
+                href="/docs"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium text-[rgb(var(--foreground-secondary))] hover:text-[rgb(var(--foreground))] hover:bg-[rgb(var(--foreground))]/5 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Documentation
+              </Link>
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium text-[rgb(var(--foreground-secondary))] hover:text-[rgb(var(--foreground))] hover:bg-[rgb(var(--foreground))]/5 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <div className="mt-2 pt-2 border-t border-[rgb(var(--border))]">
+                <Link
+                  href="/docs"
+                  className="flex items-center justify-center rounded-md bg-indigo-500 px-3 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  View Docs
+                </Link>
+              </div>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Hero Section with Thread Showcase */}
