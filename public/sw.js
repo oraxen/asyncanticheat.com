@@ -158,13 +158,21 @@ async function networkFirst(request) {
 async function staleWhileRevalidate(request) {
   const cached = await caches.match(request);
 
-  const fetchPromise = fetch(request).then((response) => {
-    if (response.ok) {
-      const cache = caches.open(DYNAMIC_CACHE_NAME);
-      cache.then((c) => c.put(request, response.clone()));
-    }
-    return response;
-  }).catch(() => cached);
+  const fetchPromise = fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        const cache = caches.open(DYNAMIC_CACHE_NAME);
+        cache.then((c) => c.put(request, response.clone()));
+      }
+      return response;
+    })
+    .catch(() => {
+      // Return cached version if available, otherwise return offline response
+      if (cached) {
+        return cached;
+      }
+      return new Response("Offline", { status: 503 });
+    });
 
   return cached || fetchPromise;
 }
@@ -196,8 +204,9 @@ async function navigationHandler(request) {
       }
     }
 
-    // Return offline page
-    return caches.match("/") || new Response("Offline", { status: 503 });
+    // Return offline page - await the cache match before applying fallback
+    const rootCached = await caches.match("/");
+    return rootCached || new Response("Offline", { status: 503 });
   }
 }
 
