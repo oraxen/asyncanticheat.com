@@ -17,8 +17,7 @@ import {
   formatDetectorScope,
   formatDetectorTier,
   getModuleName,
-  formatModuleName,
-  getModuleBgColor,
+  getModuleColorClass,
 } from "@/lib/utils";
 import { api, type Finding } from "@/lib/api";
 import { useSelectedServer } from "@/lib/server-context";
@@ -298,21 +297,25 @@ function PlayerHistoryPanel({
                           <div className="flex items-center justify-between mb-1.5">
                             {(() => {
                               const p = parseDetectorName(finding.detector_name);
-                              const tier = formatDetectorTier(p.tier);
-                              const moduleBgColor = getModuleBgColor(p.scope);
+                              const moduleName = getModuleName(p);
+                              const moduleColorClass = getModuleColorClass(p);
                               return (
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className={cn("px-2 py-0.5 rounded text-[10px] border", moduleBgColor)}>
-                                    {formatModuleName(p.scope)}
+                                  <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
+                                    {formatDetectorScope(p.scope)}
                                   </span>
                                   <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
                                     {formatDetectorCategory(p.category)}
                                   </span>
-                                  {tier && (
-                                    <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/50">
-                                      {tier}
-                                    </span>
-                                  )}
+                                  <span
+                                    className={cn(
+                                      "px-2 py-0.5 rounded text-[10px]",
+                                      moduleColorClass
+                                    )}
+                                    title={`Module: ${moduleName}`}
+                                  >
+                                    {moduleName}
+                                  </span>
                                   <span
                                     className="text-[10px] text-white/30 font-mono truncate"
                                     title={finding.detector_name}
@@ -656,22 +659,26 @@ export default function FindingsPage() {
                     <div className="flex-1 min-w-0">
                       {(() => {
                         const p = parseDetectorName(finding.detector_name);
-                        const tier = formatDetectorTier(p.tier);
-                        const moduleBgColor = getModuleBgColor(p.scope);
+                        const moduleName = getModuleName(p);
+                        const moduleColorClass = getModuleColorClass(p);
                         return (
                           <div className="flex flex-col gap-1 min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <span className={cn("px-2 py-0.5 rounded text-[10px] border", moduleBgColor)}>
-                                {formatModuleName(p.scope)}
+                              <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
+                                {formatDetectorScope(p.scope)}
                               </span>
                               <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
                                 {formatDetectorCategory(p.category)}
                               </span>
-                              {tier && (
-                                <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/50">
-                                  {tier}
-                                </span>
-                              )}
+                              <span
+                                className={cn(
+                                  "px-2 py-0.5 rounded text-[10px]",
+                                  moduleColorClass
+                                )}
+                                title={`Module: ${moduleName}`}
+                              >
+                                {moduleName}
+                              </span>
                             </div>
                             <span
                               className="text-[10px] text-white/30 font-mono truncate"
