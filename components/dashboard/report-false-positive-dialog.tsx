@@ -21,6 +21,7 @@ interface ReportFalsePositiveDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   serverId: string;
+  onReportSuccess?: (findingId: string) => void;
 }
 
 export function ReportFalsePositiveDialog({
@@ -28,6 +29,7 @@ export function ReportFalsePositiveDialog({
   open,
   onOpenChange,
   serverId,
+  onReportSuccess,
 }: ReportFalsePositiveDialogProps) {
   const [playerActivity, setPlayerActivity] = useState("");
   const [suspectedCause, setSuspectedCause] = useState("");
@@ -63,6 +65,9 @@ export function ReportFalsePositiveDialog({
       if (insertError) {
         throw new Error(insertError.message);
       }
+
+      // Notify parent of successful report
+      onReportSuccess?.(finding.id);
 
       setSubmitted(true);
       setTimeout(() => {

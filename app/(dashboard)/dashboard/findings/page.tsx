@@ -9,6 +9,7 @@ import {
   RiAlertLine,
   RiArrowLeftLine,
   RiFlagLine,
+  RiFlagFill,
 } from "@remixicon/react";
 import {
   cn,
@@ -20,6 +21,7 @@ import {
 import { api, type Finding } from "@/lib/api";
 import { useSelectedServer } from "@/lib/server-context";
 import { ReportFalsePositiveDialog } from "@/components/dashboard/report-false-positive-dialog";
+import { createClient } from "@/lib/supabase/client";
 
 const severityColors = {
   low: "text-blue-400",
@@ -119,11 +121,13 @@ function PlayerHistoryPanel({
   findings,
   onClose,
   onReportFalsePositive,
+  reportedFindingIds,
 }: {
   playerName: string;
   findings: Finding[];
   onClose: () => void;
   onReportFalsePositive: (finding: Finding) => void;
+  reportedFindingIds: Set<string>;
 }) {
   // Normalize player name comparison to handle "Unknown" entries
   const playerFindings = findings.filter(
@@ -275,10 +279,14 @@ function PlayerHistoryPanel({
                       finding.occurrences && finding.occurrences > 1
                         ? finding.occurrences
                         : null;
+                    const isReported = reportedFindingIds.has(finding.id);
                     return (
                       <div
                         key={finding.id}
-                        className="relative flex items-start gap-4 group"
+                        className={cn(
+                          "relative flex items-start gap-4 group",
+                          isReported && "opacity-60"
+                        )}
                       >
                         {/* Timeline Dot */}
                         <div className="absolute -left-4 top-1.5">
@@ -321,16 +329,25 @@ function PlayerHistoryPanel({
                               );
                             })()}
                             <div className="flex items-center gap-2">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onReportFalsePositive(finding);
-                                }}
-                                className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:bg-white/[0.08] text-white/40 hover:text-amber-400 transition-all"
-                                title="Report as false positive"
-                              >
-                                <RiFlagLine className="h-3.5 w-3.5" />
-                              </button>
+                              {isReported ? (
+                                <div
+                                  className="p-1 text-amber-400"
+                                  title="Reported as false positive"
+                                >
+                                  <RiFlagFill className="h-3.5 w-3.5" />
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onReportFalsePositive(finding);
+                                  }}
+                                  className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:bg-white/[0.08] text-white/40 hover:text-amber-400 transition-all"
+                                  title="Report as false positive"
+                                >
+                                  <RiFlagLine className="h-3.5 w-3.5" />
+                                </button>
+                              )}
                               <span className="text-[10px] text-white/30 tabular-nums">
                                 {time}
                               </span>
@@ -349,6 +366,11 @@ function PlayerHistoryPanel({
                               {occ && (
                                 <span className="text-[10px] text-white/40 font-mono flex-shrink-0">
                                   ×{occ}
+                                </span>
+                              )}
+                              {isReported && (
+                                <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-[9px] text-amber-400 font-medium uppercase tracking-wide flex-shrink-0">
+                                  Reported
                                 </span>
                               )}
                             </div>
@@ -393,10 +415,17 @@ export default function FindingsPage() {
   // False positive report dialog state
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedFindingForReport, setSelectedFindingForReport] = useState<Finding | null>(null);
-  
+  // Track finding IDs that have been reported as false positives
+  const [reportedFindingIds, setReportedFindingIds] = useState<Set<string>>(new Set());
+
   const handleReportFalsePositive = useCallback((finding: Finding) => {
     setSelectedFindingForReport(finding);
     setReportDialogOpen(true);
+  }, []);
+
+  // Handle successful false positive report submission
+  const handleReportSuccess = useCallback((findingId: string) => {
+    setReportedFindingIds(prev => new Set([...prev, findingId]));
   }, []);
 
   // Fetch findings from API - refetch when filter OR server changes
@@ -453,6 +482,37 @@ export default function FindingsPage() {
 
     fetchFindings();
   }, [filter, selectedServerId, deepLinkPlayer]);
+
+  // Fetch existing false positive reports for the current server
+  useEffect(() => {
+    if (!selectedServerId) {
+      setReportedFindingIds(new Set());
+      return;
+    }
+
+    async function fetchReportedFindings() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("false_positive_reports")
+          .select("finding_id")
+          .eq("server_id", selectedServerId);
+
+        if (error) {
+          console.error("Failed to fetch false positive reports:", error);
+          return;
+        }
+
+        if (data) {
+          setReportedFindingIds(new Set(data.map((r) => r.finding_id)));
+        }
+      } catch (err) {
+        console.error("Failed to fetch false positive reports:", err);
+      }
+    }
+
+    fetchReportedFindings();
+  }, [selectedServerId]);
 
   // Check for player query param on mount
   useEffect(() => {
@@ -651,13 +711,15 @@ export default function FindingsPage() {
                 finding.occurrences && finding.occurrences > 1
                   ? finding.occurrences
                   : null;
+              const isReported = reportedFindingIds.has(finding.id);
               return (
                 <div
                   key={finding.id}
                   className={cn(
                     "w-full flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors text-left group/row",
                     selectedPlayer === (finding.player_name || "Unknown") &&
-                      "bg-white/[0.04]"
+                      "bg-white/[0.04]",
+                    isReported && "opacity-60"
                   )}
                 >
                   <button
@@ -724,6 +786,11 @@ export default function FindingsPage() {
                             ×{occ}
                           </span>
                         )}
+                        {isReported && (
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-[9px] text-amber-400 font-medium uppercase tracking-wide">
+                            Reported
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="w-20 text-right flex-shrink-0">
@@ -736,13 +803,22 @@ export default function FindingsPage() {
                     </div>
                   </button>
                   {/* Report False Positive Button */}
-                  <button
-                    onClick={() => handleReportFalsePositive(finding)}
-                    className="opacity-0 group-hover/row:opacity-100 p-2 rounded-lg hover:bg-white/[0.06] text-white/40 hover:text-amber-400 transition-all flex-shrink-0"
-                    title="Report as false positive"
-                  >
-                    <RiFlagLine className="h-4 w-4" />
-                  </button>
+                  {isReported ? (
+                    <div
+                      className="p-2 text-amber-400 flex-shrink-0"
+                      title="Reported as false positive"
+                    >
+                      <RiFlagFill className="h-4 w-4" />
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleReportFalsePositive(finding)}
+                      className="opacity-0 group-hover/row:opacity-100 p-2 rounded-lg hover:bg-white/[0.06] text-white/40 hover:text-amber-400 transition-all flex-shrink-0"
+                      title="Report as false positive"
+                    >
+                      <RiFlagLine className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -773,6 +849,7 @@ export default function FindingsPage() {
                 setSearch("");
               }}
               onReportFalsePositive={handleReportFalsePositive}
+              reportedFindingIds={reportedFindingIds}
             />
           </div>
         </>
@@ -785,6 +862,7 @@ export default function FindingsPage() {
           open={reportDialogOpen}
           onOpenChange={setReportDialogOpen}
           serverId={selectedServerId}
+          onReportSuccess={handleReportSuccess}
         />
       )}
     </div>
