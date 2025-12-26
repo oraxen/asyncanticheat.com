@@ -8,9 +8,10 @@ const STATIC_CACHE_NAME = "asyncac-static-v1";
 const DYNAMIC_CACHE_NAME = "asyncac-dynamic-v1";
 
 // Static assets to cache on install
+// Note: Don't include authenticated routes like /dashboard here
+// They will be cached dynamically when accessed while logged in
 const STATIC_ASSETS = [
   "/",
-  "/dashboard",
   "/login",
   "/docs",
   "/icon-192.png",
