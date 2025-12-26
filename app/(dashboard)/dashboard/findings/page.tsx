@@ -739,34 +739,32 @@ export default function FindingsPage() {
                         {finding.player_name || "Unknown"}
                       </p>
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 flex items-center gap-1.5">
                       {(() => {
                         const p = parseDetectorName(finding.detector_name);
                         const moduleName = getModuleName(p);
                         const moduleColorClass = getModuleColorClass(p);
                         return (
-                          <div className="flex flex-col gap-1 min-w-0">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span
-                                className={cn(
-                                  "px-2 py-0.5 rounded text-[10px]",
-                                  moduleColorClass
-                                )}
-                                title={`Module: ${moduleName}`}
-                              >
-                                {moduleName}
-                              </span>
-                              <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
-                                {formatDetectorCategory(p.category)}
-                              </span>
-                            </div>
+                          <>
+                            <span
+                              className={cn(
+                                "px-2 py-0.5 rounded text-[10px]",
+                                moduleColorClass
+                              )}
+                              title={`Module: ${moduleName}`}
+                            >
+                              {moduleName}
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
+                              {formatDetectorCategory(p.category)}
+                            </span>
                             <span
                               className="text-[10px] text-white/30 font-mono truncate"
                               title={finding.detector_name}
                             >
                               {finding.detector_name}
                             </span>
-                          </div>
+                          </>
                         );
                       })()}
                     </div>
