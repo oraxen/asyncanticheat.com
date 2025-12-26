@@ -9,7 +9,11 @@
     "build": "next build --webpack && pagefind --site .next/server/app --output-path public/_pagefind",
     "start": "next start",
     "lint": "eslint app components lib types",
-    "screenshots": "bun run scripts/capture-screenshots.ts"
+    "screenshots": "bun run scripts/capture-screenshots.ts",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.2",
@@ -45,6 +49,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@next/eslint-plugin-next": "^16.0.7",
+    "@playwright/test": "^1.57.0",
     "@types/node": "^24.10.1",
     "@types/react": "19.2.7",
     "@types/react-dom": "^19.2.3",

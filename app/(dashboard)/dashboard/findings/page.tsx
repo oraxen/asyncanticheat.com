@@ -595,18 +595,44 @@ export default function FindingsPage() {
         </div>
       </div>
 
-      {/* Loading / Error states */}
-      {loading && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-white/60 text-sm">Loading findings...</div>
-        </div>
-      )}
-
+      {/* Error state */}
       {error && (
         <div className="m-5">
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-xs">
             {error}
           </div>
+        </div>
+      )}
+
+      {/* Loading skeleton */}
+      {loading && (
+        <div className="flex-1 overflow-y-auto divide-y divide-white/[0.04]">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="w-full flex items-center gap-4 px-5 py-3.5 animate-pulse">
+              <div className="w-2 h-2 rounded-full bg-white/[0.06] flex-shrink-0" />
+              <div className="w-32 flex-shrink-0">
+                <div className="h-4 w-20 bg-white/[0.06] rounded" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-4 w-16 bg-white/[0.06] rounded" />
+                    <div className="h-4 w-14 bg-white/[0.06] rounded" />
+                  </div>
+                  <div className="h-3 w-32 bg-white/[0.06] rounded" />
+                </div>
+              </div>
+              <div className="w-24 flex-shrink-0">
+                <div className="h-3 w-16 bg-white/[0.06] rounded ml-auto" />
+              </div>
+              <div className="w-20 flex-shrink-0">
+                <div className="h-3 w-12 bg-white/[0.06] rounded ml-auto" />
+              </div>
+              <div className="w-14 flex-shrink-0">
+                <div className="h-3 w-10 bg-white/[0.06] rounded ml-auto" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

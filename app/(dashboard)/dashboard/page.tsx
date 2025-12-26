@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { api, type DashboardStats, type ConnectionMetrics } from "@/lib/api";
 import { useSelectedServer } from "@/lib/server-context";
+import { DashboardSkeleton } from "@/components/ui/skeleton";
 
 // Transform API player to dashboard player format
 interface DashboardPlayer {
@@ -732,6 +733,11 @@ export default function DashboardPage() {
 
   if (!mounted) return null;
 
+  // Show skeleton while loading initial data
+  if (loading && !stats) {
+    return <DashboardSkeleton />;
+  }
+
   if (!selectedServerId) {
     return (
       <div className="min-h-[calc(100vh-5rem)] lg:h-[calc(100vh-3rem)] flex items-center justify-center -m-4 lg:-m-6 p-4 lg:p-6">
@@ -795,13 +801,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Loading / Error states */}
-        {loading && !stats && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
-            <div className="text-white/60 text-sm">Loading...</div>
-          </div>
-        )}
-
+        {/* Error state */}
         {error && (
           <div className="absolute bottom-20 lg:bottom-20 left-4 right-4 lg:left-6 lg:right-6 z-20">
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-xs">
