@@ -14,8 +14,6 @@ import {
   cn,
   parseDetectorName,
   formatDetectorCategory,
-  formatDetectorScope,
-  formatDetectorTier,
   getModuleName,
   getModuleColorClass,
 } from "@/lib/utils";
@@ -301,12 +299,6 @@ function PlayerHistoryPanel({
                               const moduleColorClass = getModuleColorClass(p);
                               return (
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
-                                    {formatDetectorScope(p.scope)}
-                                  </span>
-                                  <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
-                                    {formatDetectorCategory(p.category)}
-                                  </span>
                                   <span
                                     className={cn(
                                       "px-2 py-0.5 rounded text-[10px]",
@@ -315,6 +307,9 @@ function PlayerHistoryPanel({
                                     title={`Module: ${moduleName}`}
                                   >
                                     {moduleName}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
+                                    {formatDetectorCategory(p.category)}
                                   </span>
                                   <span
                                     className="text-[10px] text-white/30 font-mono truncate"
@@ -664,12 +659,6 @@ export default function FindingsPage() {
                         return (
                           <div className="flex flex-col gap-1 min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
-                                {formatDetectorScope(p.scope)}
-                              </span>
-                              <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
-                                {formatDetectorCategory(p.category)}
-                              </span>
                               <span
                                 className={cn(
                                   "px-2 py-0.5 rounded text-[10px]",
@@ -678,6 +667,9 @@ export default function FindingsPage() {
                                 title={`Module: ${moduleName}`}
                               >
                                 {moduleName}
+                              </span>
+                              <span className="px-2 py-0.5 rounded bg-white/[0.03] text-[10px] text-white/60">
+                                {formatDetectorCategory(p.category)}
                               </span>
                             </div>
                             <span
