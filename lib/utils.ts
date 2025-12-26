@@ -86,49 +86,30 @@ export function formatDetectorTier(tier: DetectorTier): string | null {
 }
 
 /**
- * Get the module name from a detector name (essentially the scope).
+ * Get the module name from detector parts.
+ * E.g., { scope: "combat", tier: "core" } → "Combat Core"
+ *       { scope: "movement", tier: "legacy" } → "Movement"
  */
-export function getModuleName(detectorName: string): DetectorScope {
-  return parseDetectorName(detectorName).scope;
-}
-
-/**
- * Format module name for display.
- */
-export function formatModuleName(scope: DetectorScope): string {
-  return formatDetectorScope(scope);
-}
-
-/**
- * Get module-specific accent color for subtle UI hints.
- */
-export function getModuleColor(scope: DetectorScope): string {
-  switch (scope) {
-    case "movement":
-      return "text-blue-400/70";
-    case "combat":
-      return "text-red-400/70";
-    case "player":
-      return "text-purple-400/70";
-    default:
-      return "text-gray-400/70";
+export function getModuleName(parts: DetectorNameParts): string {
+  const scopeName = formatDetectorScope(parts.scope);
+  if (parts.tier === "legacy") {
+    return scopeName;
   }
+  return `${scopeName} ${titleCaseToken(parts.tier)}`;
 }
 
 /**
- * Get module-specific background color for badges.
+ * Module color classes for subtle visual distinction.
+ * Returns a background color class for the module badge.
  */
-export function getModuleBgColor(scope: DetectorScope): string {
-  switch (scope) {
-    case "movement":
-      return "bg-blue-500/10 border-blue-500/20";
-    case "combat":
-      return "bg-red-500/10 border-red-500/20";
-    case "player":
-      return "bg-purple-500/10 border-purple-500/20";
-    default:
-      return "bg-gray-500/10 border-gray-500/20";
-  }
+export function getModuleColorClass(parts: DetectorNameParts): string {
+  const baseColors: Record<DetectorScope, string> = {
+    combat: "bg-red-500/10 text-red-400/70",
+    movement: "bg-blue-500/10 text-blue-400/70",
+    player: "bg-emerald-500/10 text-emerald-400/70",
+    other: "bg-white/[0.03] text-white/50",
+  };
+  return baseColors[parts.scope];
 }
 
 
