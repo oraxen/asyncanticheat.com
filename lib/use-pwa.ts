@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -35,6 +35,7 @@ export function usePWA(): PWAState & PWAActions {
   const [isOffline, setIsOffline] = useState(false);
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const controllerChangeListenerRef = useRef<(() => void) | null>(null);
 
   // Check if app is installed
   useEffect(() => {
@@ -150,10 +151,14 @@ export function usePWA(): PWAState & PWAActions {
     // Tell waiting SW to skip waiting
     registration.waiting.postMessage({ type: "SKIP_WAITING" });
 
-    // Reload page when new SW takes control
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      window.location.reload();
-    });
+    // Only add listener if not already added
+    if (!controllerChangeListenerRef.current) {
+      const handleControllerChange = () => {
+        window.location.reload();
+      };
+      controllerChangeListenerRef.current = handleControllerChange;
+      navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
+    }
   }, [registration]);
 
   return {

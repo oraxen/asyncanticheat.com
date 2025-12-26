@@ -411,7 +411,8 @@ export default function FindingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const fetchIdRef = useRef(0);
-  
+  const fpFetchIdRef = useRef(0);
+
   // False positive report dialog state
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedFindingForReport, setSelectedFindingForReport] = useState<Finding | null>(null);
@@ -490,6 +491,8 @@ export default function FindingsPage() {
       return;
     }
 
+    const fetchId = ++fpFetchIdRef.current;
+
     async function fetchReportedFindings() {
       try {
         const supabase = createClient();
@@ -497,6 +500,9 @@ export default function FindingsPage() {
           .from("false_positive_reports")
           .select("finding_id")
           .eq("server_id", selectedServerId);
+
+        // Guard against stale responses from out-of-order requests
+        if (fetchId !== fpFetchIdRef.current) return;
 
         if (error) {
           console.error("Failed to fetch false positive reports:", error);
@@ -507,6 +513,8 @@ export default function FindingsPage() {
           setReportedFindingIds(new Set(data.map((r) => r.finding_id)));
         }
       } catch (err) {
+        // Guard against stale error handling
+        if (fetchId !== fpFetchIdRef.current) return;
         console.error("Failed to fetch false positive reports:", err);
       }
     }
