@@ -70,6 +70,7 @@ export async function POST(req: Request) {
   const update: Record<string, unknown> = {
     owner_user_id: user.id,
     registered_at: new Date().toISOString(),
+    auth_token: token, // Store plain token so user can retrieve it later
   };
 
   // Only set name if the server doesn't already have one.
