@@ -9,6 +9,10 @@ import {
   RiLoader4Line,
   RiCheckLine,
   RiAlertLine,
+  RiKeyLine,
+  RiEyeLine,
+  RiEyeOffLine,
+  RiFileCopyLine,
 } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 import { useSelectedServer } from "@/lib/server-context";
@@ -131,6 +135,13 @@ export default function SettingsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Token state
+  const [token, setToken] = useState<string | null>(null);
+  const [tokenLoading, setTokenLoading] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [showToken, setShowToken] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   // Track if settings have been modified
   const [hasChanges, setHasChanges] = useState(false);
   const [originalSettings, setOriginalSettings] = useState<ServerSettings | null>(null);
@@ -166,6 +177,39 @@ export default function SettingsPage() {
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
+
+  // Load token
+  const loadToken = useCallback(async () => {
+    if (!serverId) return;
+
+    setTokenLoading(true);
+    setTokenError(null);
+    try {
+      const res = await fetch(`/api/servers/${serverId}/token`);
+      const data = await res.json();
+      if (data.ok) {
+        setToken(data.token);
+      } else {
+        setTokenError(data.message || data.error || "Failed to load token");
+      }
+    } catch (err) {
+      setTokenError(err instanceof Error ? err.message : "Failed to load token");
+    } finally {
+      setTokenLoading(false);
+    }
+  }, [serverId]);
+
+  // Copy token to clipboard
+  const handleCopyToken = async () => {
+    if (!token) return;
+    try {
+      await navigator.clipboard.writeText(token);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy token:", err);
+    }
+  };
 
   // Check for changes
   useEffect(() => {
@@ -329,6 +373,87 @@ export default function SettingsPage() {
             Save Changes
           </button>
         )}
+      </div>
+
+      {/* Authentication Token Section */}
+      <div className="rounded-lg border border-[rgb(var(--border))] surface-1">
+        <div className="flex items-start gap-3 p-4 border-b border-[rgb(var(--border))]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-500/10">
+            <RiKeyLine className="h-4 w-4 text-indigo-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-[rgb(var(--foreground))]">Authentication Token</h3>
+            <p className="text-xs text-[rgb(var(--foreground-tertiary))]">
+              Use this token to link your plugin to this dashboard
+            </p>
+          </div>
+        </div>
+        <div className="p-4 space-y-3">
+          {token === null && !tokenLoading && !tokenError && (
+            <button
+              onClick={loadToken}
+              className="rounded-md border border-[rgb(var(--border))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--foreground-secondary))] hover:border-[rgb(var(--border-elevated))] transition-colors"
+            >
+              Reveal Token
+            </button>
+          )}
+          {tokenLoading && (
+            <div className="flex items-center gap-2 text-sm text-[rgb(var(--foreground-secondary))]">
+              <RiLoader4Line className="h-4 w-4 animate-spin" />
+              Loading token...
+            </div>
+          )}
+          {tokenError && (
+            <div className="flex items-center gap-2 text-sm text-amber-400">
+              <RiAlertLine className="h-4 w-4" />
+              {tokenError}
+            </div>
+          )}
+          {token && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type={showToken ? "text" : "password"}
+                    value={token}
+                    readOnly
+                    className="w-full rounded-md border border-[rgb(var(--border))] surface-2 px-3 py-2 text-sm text-[rgb(var(--foreground))] font-mono focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={() => setShowToken(!showToken)}
+                  className="rounded-md border border-[rgb(var(--border))] p-2 text-[rgb(var(--foreground-secondary))] hover:border-[rgb(var(--border-elevated))] transition-colors"
+                  title={showToken ? "Hide token" : "Show token"}
+                >
+                  {showToken ? (
+                    <RiEyeOffLine className="h-4 w-4" />
+                  ) : (
+                    <RiEyeLine className="h-4 w-4" />
+                  )}
+                </button>
+                <button
+                  onClick={handleCopyToken}
+                  className={cn(
+                    "rounded-md border border-[rgb(var(--border))] p-2 transition-colors",
+                    copied
+                      ? "text-green-400 border-green-500/30"
+                      : "text-[rgb(var(--foreground-secondary))] hover:border-[rgb(var(--border-elevated))]"
+                  )}
+                  title="Copy token"
+                >
+                  {copied ? (
+                    <RiCheckLine className="h-4 w-4" />
+                  ) : (
+                    <RiFileCopyLine className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-[rgb(var(--foreground-muted))]">
+                Copy this token to your plugin&apos;s configuration file to link it to this server.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Webhook Section */}
